@@ -1,7 +1,7 @@
 // www/test/narrator.test.js
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Narrator, splitSentences, SpeechPlayer } from '../lib/narrator.js';
+import { Narrator, splitSentences, SpeechPlayer, NativeTtsPlayer, createSpeechPlayer, nativeTts } from '../lib/narrator.js';
 const stop = { id: 'vettii', open30: 'פתיח', deep: 'עומק', next_nav: 'הבא' };
 const fake = (fail = false) => { const p = { calls: [], play: async (x) => { p.calls.push(['play', x]); if (fail) { const e = new Error('missing'); e.code = 'ENOENT'; throw e; } }, pause: () => p.calls.push(['pause']), resume: () => p.calls.push(['resume']), stop: () => p.calls.push(['stop']) }; return p; };
 test('plays file when present; records lastSpoken', async () => {
@@ -95,4 +95,78 @@ test('superseded speak() cannot clobber newer call state (generation token)', as
   assert.equal(n.state, 'playing'); assert.equal(n.lastSpoken, 'עומק');
   resolveB(); await pB;
   assert.equal(n.state, 'idle');
+});
+
+// ---- native (Capacitor) TTS: the Android WebView has no speechSynthesis at all ----
+const fakeTts = () => {
+  const calls = []; let pending = null;
+  return {
+    calls,
+    settle() { const p = pending; pending = null; p?.(); },        // finish the sentence in flight
+    speak(o) { calls.push(['speak', o.text, o.lang]); return new Promise(r => { pending = r; }); },
+    stop() { calls.push(['stop']); const p = pending; pending = null; p?.(); return Promise.resolve(); }
+  };
+};
+
+test('NativeTtsPlayer speaks sentence by sentence with he-IL', async () => {
+  const tts = fakeTts();
+  const p = new NativeTtsPlayer(tts);
+  const done = p.play('one. two. three');
+  await null;
+  assert.deepEqual(tts.calls, [['speak', 'one.', 'he-IL']]);
+  tts.settle(); await new Promise(r => setTimeout(r, 0));
+  assert.deepEqual(tts.calls.at(-1), ['speak', 'two.', 'he-IL']);
+  tts.settle(); await new Promise(r => setTimeout(r, 0));
+  assert.deepEqual(tts.calls.at(-1), ['speak', 'three', 'he-IL']);
+  tts.settle();
+  await done;                                   // resolves once every sentence is done
+});
+
+test('NativeTtsPlayer pause() stops the engine and resume() re-speaks the cut sentence', async () => {
+  const tts = fakeTts();
+  const p = new NativeTtsPlayer(tts);
+  const done = p.play('one. two. three');
+  await null;
+  tts.settle(); await new Promise(r => setTimeout(r, 0));   // now speaking "two."
+  p.pause();
+  assert.deepEqual(tts.calls.at(-1), ['stop']);
+  await new Promise(r => setTimeout(r, 0));
+  assert.deepEqual(tts.calls.filter(c => c[0] === 'speak').map(c => c[1]), ['one.', 'two.']);
+  p.resume();
+  await new Promise(r => setTimeout(r, 0));
+  assert.deepEqual(tts.calls.filter(c => c[0] === 'speak').map(c => c[1]), ['one.', 'two.', 'two.']);
+  tts.settle(); await new Promise(r => setTimeout(r, 0));
+  tts.settle();
+  await done;
+});
+
+test('NativeTtsPlayer stop() resolves the pending play()', async () => {
+  const tts = fakeTts();
+  const p = new NativeTtsPlayer(tts);
+  const done = p.play('one. two.');
+  await null;
+  p.stop();
+  await done;
+  assert.deepEqual(tts.calls.filter(c => c[0] === 'speak').map(c => c[1]), ['one.']);
+});
+
+test('NativeTtsPlayer survives a sentence the engine rejects', async () => {
+  const spoken = [];
+  const tts = { speak: async (o) => { spoken.push(o.text); if (o.text === 'two.') throw new Error('engine busy'); }, stop: async () => {} };
+  const p = new NativeTtsPlayer(tts);
+  await p.play('one. two. three');
+  assert.deepEqual(spoken, ['one.', 'two.', 'three']);
+});
+
+test('createSpeechPlayer picks the native plugin when the bridge exposes it, else SpeechPlayer', () => {
+  assert.equal(nativeTts(), null);
+  assert.equal(createSpeechPlayer().constructor.name, 'SpeechPlayer');
+  const plugin = { speak: async () => {}, stop: async () => {} };
+  globalThis.Capacitor = { Plugins: { TextToSpeech: plugin } };
+  try {
+    assert.equal(nativeTts(), plugin);
+    assert.equal(createSpeechPlayer().constructor.name, 'NativeTtsPlayer');
+    globalThis.Capacitor = { Plugins: {}, registerPlugin: (n) => (n === 'TextToSpeech' ? plugin : null) };
+    assert.equal(nativeTts(), plugin);          // fallback path when Plugins is not pre-populated
+  } finally { delete globalThis.Capacitor; }
 });

@@ -88,3 +88,53 @@ export class SpeechPlayer {
   resume() { if (this.done || !this.paused) return; this.paused = false; this._speakFrom(this.idx); }
   stop() { this.paused = false; this._abort?.(); globalThis.speechSynthesis?.cancel(); this._finish(); }
 }
+
+// ---- native (Capacitor) TTS ----
+// Android WebView has no speechSynthesis at all, so on device we drive the platform engine
+// through @capacitor-community/text-to-speech. There is no bundler here, so the plugin is reached
+// through the bridge the native runtime injects on `window.Capacitor`. Verified on the emulator
+// (Capacitor 8, Android 16): `Capacitor.Plugins.TextToSpeech.speak` is a function, while
+// `Capacitor.registerPlugin` is *not* on the injected global — that path only exists when
+// @capacitor/core is bundled, so it stays here purely as a fallback.
+export function nativeTts() {
+  const C = globalThis.Capacitor;
+  if (!C) return null;
+  const direct = C.Plugins?.TextToSpeech;
+  if (typeof direct?.speak === 'function') return direct;
+  try { const r = C.registerPlugin?.('TextToSpeech'); if (typeof r?.speak === 'function') return r; } catch {}
+  return null;
+}
+
+// Same play/pause/resume/stop contract as SpeechPlayer: one sentence per speak() call, so
+// pause() can cancel the engine and resume() can re-speak from the sentence that was cut.
+export class NativeTtsPlayer {
+  constructor(plugin, lang = 'he-IL') { this.tts = plugin; this.lang = lang; this.parts = []; this.idx = 0; this.done = true; this.paused = false; this._resolve = null; this._gen = 0; }
+  play(text) {
+    return new Promise((resolve) => {
+      this._finish();                       // never strand an earlier play()
+      this.parts = splitSentences(text); this.idx = 0; this.paused = false;
+      if (!this.tts || !this.parts.length) return resolve();
+      this.done = false; this._resolve = resolve;
+      this._run(++this._gen, 0);
+    });
+  }
+  async _run(gen, from) {
+    for (let i = from; i < this.parts.length; i++) {
+      if (gen !== this._gen || this.done || this.paused) return;
+      this.idx = i;
+      // A single failed sentence (engine busy, missing voice) must not strand the narration.
+      try { await this.tts.speak({ text: this.parts[i], lang: this.lang, rate: 1.0, pitch: 1.0, volume: 1.0, category: 'ambient' }); } catch {}
+    }
+    if (gen === this._gen && !this.paused && !this.done) this._finish();
+  }
+  _finish() { if (this.done) return; this.done = true; const r = this._resolve; this._resolve = null; this.parts = []; r?.(); }
+  pause() { if (this.done || this.paused) return; this.paused = true; this._gen++; try { this.tts?.stop(); } catch {} }
+  resume() { if (this.done || !this.paused) return; this.paused = false; this._run(++this._gen, this.idx); }
+  stop() { this.paused = false; this._gen++; try { this.tts?.stop(); } catch {} this._finish(); }
+}
+
+// Native engine on device, Web Speech API in the browser.
+export function createSpeechPlayer(lang = 'he-IL') {
+  const p = nativeTts();
+  return p ? new NativeTtsPlayer(p, lang) : new SpeechPlayer(lang);
+}

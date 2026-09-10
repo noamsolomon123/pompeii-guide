@@ -5,7 +5,7 @@ import { Settings } from './lib/settings.js';
 import { buildSystemPrompt } from './lib/context.js';
 import { identifyByVision } from './lib/vision.js';
 import { createVoiceClient } from './lib/voice/factory.js';
-import { Narrator, AudioFilePlayer, SpeechPlayer } from './lib/narrator.js';
+import { Narrator, AudioFilePlayer, createSpeechPlayer } from './lib/narrator.js';
 import { Camera } from './lib/camera.js';
 import { Gps } from './lib/gps.js';
 import { BargeIn } from './lib/barge-in.js';
@@ -13,7 +13,7 @@ import { isOnline, startNetWatch } from './lib/net.js';
 
 const $ = (id) => document.getElementById(id);
 const settings = new Settings(localStorage);
-const narrator = new Narrator({ filePlayer: new AudioFilePlayer(), ttsPlayer: new SpeechPlayer() });
+const narrator = new Narrator({ filePlayer: new AudioFilePlayer(), ttsPlayer: createSpeechPlayer() });
 const camera = new Camera($('video'));
 const gps = new Gps((fix) => { $('gpsDot').classList.add('on'); showNearest(fix.pos); });
 let stops = [], current = null, voice = null, bargeIn = null, state = 'idle';
@@ -142,7 +142,7 @@ async function startQa() {
   clearTimeout(offerTimer);
   if (!await isOnline()) {
     setStatus('אין רשת כרגע, אענה כשנחזור');
-    await new SpeechPlayer().play('אין רשת כרגע, אענה כשנחזור');
+    await createSpeechPlayer().play('אין רשת כרגע, אענה כשנחזור');
     if (narrator.state === 'paused') { narrator.resume(); setState('narrating'); }
     armBargeIn();
     return;
@@ -232,4 +232,4 @@ async function boot() {
 }
 boot().catch(e => setStatus('שגיאת טעינה: ' + e.message));
 // exposed for the emulator/CDP simulation harness
-window.__pg = { get state() { return state; }, get current() { return current; }, arriveAt, identify, goDeep, goNext, startQa, openSettings, hebrewStatus, settings, stops: () => stops };
+window.__pg = { get state() { return state; }, get current() { return current; }, arriveAt, identify, goDeep, goNext, startQa, openSettings, hebrewStatus, settings, stops: () => stops, ttsKind: () => narrator.ttsPlayer?.constructor?.name ?? null };
