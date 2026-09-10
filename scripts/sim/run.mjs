@@ -55,6 +55,10 @@ async function main() {
   report.env.userAgent = await cdp.evaluate('return navigator.userAgent');
   report.env.hasGeolocation = await cdp.evaluate('return !!navigator.geolocation');
   report.env.hasSpeechSynthesis = await cdp.evaluate('return !!globalThis.speechSynthesis');
+  report.env.capacitorPlugins = await cdp.evaluate('return Object.keys(window.Capacitor?.Plugins || {})');
+  report.env.ttsPlayer = await cdp.evaluate('return window.__pg.ttsKind ? window.__pg.ttsKind() : null');
+  report.env.ttsHasRegisterPlugin = await cdp.evaluate('return typeof window.Capacitor?.registerPlugin');
+  try { report.env.ttsLanguages = await cdp.evaluate('const r = await window.Capacitor.Plugins.TextToSpeech.getSupportedLanguages(); return r.languages'); } catch (e) { report.env.ttsLanguages = `ERR ${e.message}`; }
   const camOk = await cdp.waitFor(`const v=document.getElementById('video'); return !!v.srcObject && v.videoWidth > 0`, 20000, 1000); // virtualscene camera takes a few seconds
   report.env.cameraStatus = await cdp.evaluate(`const v=document.getElementById('video'); return { ok: ${camOk}, srcObject: !!v.srcObject, w: v.videoWidth, h: v.videoHeight, status: document.getElementById('status').textContent }`);
   log('env', JSON.stringify(report.env));
@@ -138,15 +142,19 @@ async function main() {
     await cdp.waitFor(`return !['identifying','narrating'].includes(window.__pg.state)`, 130000, 1000);
     const reachable = () => cdp.evaluate(`try{await Promise.race([fetch('https://example.com',{mode:'no-cors',cache:'no-store'}),new Promise((_,j)=>setTimeout(()=>j(new Error('timeout')),8000))]);return true}catch(e){return false}`);
     A.setNetwork(false);
-    const offline = await cdp.waitFor('return !navigator.onLine', 15000);
     const fetchReachable = await reachable();
+    // navigator.onLine never flips in the Android WebView — recorded, not waited on (finding 2).
+    const offline = !await cdp.evaluate('return navigator.onLine');
+    // The app's own truth is lib/net.js: an 8 s result cache behind a 15 s watch, so give the
+    // net dot up to 25 s to notice. Once it is off, the click's fresh probe fails within 2.5 s.
+    const dotOff = await cdp.waitFor(`return !document.getElementById('netDot').classList.contains('on')`, 25000, 1000);
     await cdp.evaluate(`document.getElementById('askBtn').click(); return 1`);
     const msg = await cdp.waitFor(`return document.getElementById('status').textContent.includes('אין רשת')`, 10000);
-    report.offline = { networkCut: !fetchReachable, navigatorOnLineWentFalse: offline, status: await cdp.evaluate(`return document.getElementById('status').textContent`), stateAfter: await cdp.evaluate('return window.__pg.state'), pass: msg };
+    report.offline = { networkCut: !fetchReachable, navigatorOnLineWentFalse: offline, netDotWentOff: dotOff, status: await cdp.evaluate(`return document.getElementById('status').textContent`), stateAfter: await cdp.evaluate('return window.__pg.state'), pass: msg };
     if (!msg) { failed = true; if (!fetchReachable && !offline) report.findings.push({ topic: 'navigator.onLine', detail: 'network was cut (fetch failed) but navigator.onLine stayed true in the WebView, so the app never shows אין רשת; use @capacitor/network or a reachability probe' }); }
     log('offline:', msg ? 'PASS' : 'FAIL', JSON.stringify(report.offline));
     A.setNetwork(true);
-    await cdp.waitFor('return navigator.onLine', 15000);
+    await cdp.waitFor(`return document.getElementById('netDot').classList.contains('on')`, 30000, 1000);
   }
 
   report.console = cdp.consoleLines().slice(-60);
