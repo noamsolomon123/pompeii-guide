@@ -12,7 +12,8 @@ Voice tour guide for the 24-stop Pompeii route, visit 20.10.2026, ~9:00–13:30.
 |---|---|
 | Device | Android only (OnePlus 15), Chrome |
 | Form | Single-page PWA, installed to home screen, GitHub Pages hosting |
-| Live voice backend | Decided by bake-off (P1): OpenAI Realtime vs Gemini Live. Adapter interface keeps both |
+| Live voice backend | Decided by bake-off (P1) between three adapters: (A) OpenAI Realtime direct, (B) pipeline via OpenRouter (STT → switchable LLM → TTS, barge-in handled locally), (C) Gemini Live direct. Adapter interface keeps all three |
+| Unified wallet | OpenRouter for everything request/response: vision identify, Hebrew proofreading, pipeline Q&A, STT, TTS generation. Realtime speech-to-speech cannot go through OpenRouter (verified 2026-09-10: no WebSocket/WebRTC endpoint), so A and C use their own provider keys |
 | Offline core | 24 stop scripts + pre-generated Hebrew MP3 + navigation + GPS/manual identify — all cached by service worker |
 | Network-only | Free-form voice Q&A (live session) and photo identify (vision call; falls back to GPS/manual offline) |
 | Budget | ~$10 total credits. Live session opened only on demand, closed after 60s idle |
@@ -23,10 +24,11 @@ Voice tour guide for the 24-stop Pompeii route, visit 20.10.2026, ~9:00–13:30.
 
 ### P1 — Bake-off (`bakeoff/`)
 Single page. Purpose: pick live voice backend and TTS voice by ear.
-- Backend selector: OpenAI Realtime (`gpt-realtime-2` / `gpt-realtime-mini`), Gemini Live (`gemini-2.5-flash-native-audio-preview-12-2025` / `gemini-3.1-flash-live-preview`).
+- Backend selector: OpenAI Realtime (`gpt-realtime-2.1` / `gpt-realtime-2.1-mini`), Gemini Live (`gemini-2.5-flash-native-audio-preview-12-2025` / `gemini-3.1-flash-live-preview`), OpenRouter pipeline (STT `openai/whisper-large-v3-turbo` → LLM of choice, default `google/gemini-2.5-flash` → TTS `openai/gpt-4o-mini-tts-2025-12-15` or `google/gemini-3.1-flash-tts-preview`).
 - Preloaded guide persona + House of the Vettii context (Hebrew system prompt).
-- Mic on, speak Hebrew, interrupt mid-answer, listen.
-- TTS panel: same 30s Vettii script rendered by Gemini TTS, OpenAI TTS (`gpt-4o-mini-tts`), ElevenLabs (free tier) → play side by side.
+- Mic on, speak Hebrew, interrupt mid-answer, listen. Pipeline barge-in = local RMS VAD stops playback and starts recording.
+- TTS panel: same 30s Vettii script rendered by OpenAI TTS and Gemini TTS (both via OpenRouter, one key) and ElevenLabs (direct, free tier) → play side by side.
+- Keys: OpenAI, Gemini, OpenRouter, ElevenLabs (optional).
 - Output: user's pick written into `docs/superpowers/specs/bakeoff-result.md`.
 
 ### P2 — Content pipeline (`content/`)
@@ -50,6 +52,7 @@ Modules (plain ES modules, no framework, no bundler):
 - `src/voice/adapter.js` — interface: `connect(systemContext)`, `pushContext(text)`, `startTurn()`, `interrupt()`, `onAudio`, `onTranscript`, `close()`.
   - `src/voice/openaiRealtime.js` — WebRTC to `https://api.openai.com/v1/realtime`, API key as bearer.
   - `src/voice/geminiLive.js` — WebSocket `BidiGenerateContent`, PCM16 in/out via AudioWorklet.
+  - `src/voice/pipeline.js` — local VAD → OpenRouter transcription → OpenRouter chat completion (history kept) → OpenRouter TTS → `<audio>`. Any LLM switchable by model id.
   - Context per spec §8: stop record + last spoken chunk + Q&A history in session.
 - `src/navigator.js` — after narration ends: play `next_nav` MP3; order from `stops.json`; villa/chaste-lovers included only when toggled in settings.
 - `src/offline.js` — `sw.js` precaches shell, `stops.json`, all MP3s. `navigator.onLine` + fetch probe before live call; offline → play `no-network.mp3`.
