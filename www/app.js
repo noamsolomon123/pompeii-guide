@@ -1,6 +1,6 @@
 // www/app.js — state machine: idle → identifying → narrating → depthOffer → qa → navigating → idle
 import { loadStops, nextStop, byId, routeOrder } from './lib/stops.js';
-import { rankByGps } from './lib/geo.js';
+import { rankByGps, chooseStop } from './lib/geo.js';
 import { Settings } from './lib/settings.js';
 import { buildSystemPrompt } from './lib/context.js';
 import { identifyByVision } from './lib/vision.js';
@@ -19,6 +19,7 @@ const gps = new Gps((fix) => { $('gpsDot').classList.add('on'); showNearest(fix.
 let stops = [], current = null, voice = null, bargeIn = null, state = 'idle';
 let idleTimer = null, resumeTimer = null, offerTimer = null;
 let narrationGen = 0, arrivalGen = 0, lastNarration = '';
+let lastIdentify = null;         // diagnostics for the last identify(), read by the sim harness
 
 const IDLE_MS = 60000;    // live session auto-close
 const RESUME_MS = 5000;   // silence after an answer → resume narration / depth offer
@@ -62,15 +63,22 @@ async function identify() {
   let frame = null; try { frame = camera.captureFrame(); } catch {}
   const pos = gps.last?.pos ?? null;
   const route = routeOrder(stops, optionals());
-  const ranked = pos ? rankByGps(route, pos, 3) : [];
+  // 5 deep so the route neighbours are in the list for the tie-break below, not just the nearest few.
+  const ranked = pos ? rankByGps(route, pos, 5) : [];
   const near = ranked.length > 0 && ranked[0].distanceM < 150;
-  let id = null, method = 'manual';
+  let id = null, method = 'manual', chosen = null;
   if (frame && settings.get('useVision') && settings.get('keys').openrouter && await isOnline()) {
     const candidates = near ? ranked.map(r => r.stop) : route;
     try { id = await identifyByVision({ apiKey: settings.get('keys').openrouter, model: settings.get('models').vision, candidates, imageDataUrl: frame }); method = 'vision'; }
     catch (e) { setStatus('זיהוי בתמונה נכשל, משתמש ב-GPS'); }
   }
-  if (!id && ranked.length && ranked[0].distanceM < 80) { id = ranked[0].stop.id; method = 'gps'; }
+  if (!id) {
+    // Where we are on the route breaks a GPS tie: the stop we are walking to, then the one we are at.
+    const preferredIds = current ? [nextStop(stops, current.id, optionals())?.id, current.id].filter(Boolean) : [];
+    chosen = chooseStop(ranked, { preferredIds, maxM: 80, tieM: 45 });
+    if (chosen.stop) { id = chosen.stop.id; method = chosen.reason === 'preferred' ? 'gps+route' : 'gps'; }
+  }
+  lastIdentify = { id, method, distanceM: chosen?.distanceM ?? null, reason: chosen?.reason ?? null, candidates: ranked.map(r => [r.stop.id, Math.round(r.distanceM)]) };
   $('identifyBtn').disabled = false;
   if (!id) { setState('idle'); setStatus('לא זוהה. בחר ידנית.'); openPicker(); return; }
   await arriveAt(id, method);
@@ -232,4 +240,6 @@ async function boot() {
 }
 boot().catch(e => setStatus('שגיאת טעינה: ' + e.message));
 // exposed for the emulator/CDP simulation harness
-window.__pg = { get state() { return state; }, get current() { return current; }, arriveAt, identify, goDeep, goNext, startQa, openSettings, hebrewStatus, settings, stops: () => stops, ttsKind: () => narrator.ttsPlayer?.constructor?.name ?? null };
+// stopNarration() cuts the audio short; the state machine then transitions on its own, because every
+// speak() the flow awaits resolves when the player is stopped (open30 → depthOffer, next_nav → navigating).
+window.__pg = { get state() { return state; }, get current() { return current; }, get lastIdentify() { return lastIdentify; }, arriveAt, identify, goDeep, goNext, startQa, openSettings, hebrewStatus, settings, stops: () => stops, stopNarration: () => narrator.stop(), ttsKind: () => narrator.ttsPlayer?.constructor?.name ?? null };
