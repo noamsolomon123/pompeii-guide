@@ -9,6 +9,7 @@ import { Narrator, AudioFilePlayer, SpeechPlayer } from './lib/narrator.js';
 import { Camera } from './lib/camera.js';
 import { Gps } from './lib/gps.js';
 import { BargeIn } from './lib/barge-in.js';
+import { isOnline, startNetWatch } from './lib/net.js';
 
 const $ = (id) => document.getElementById(id);
 const settings = new Settings(localStorage);
@@ -27,11 +28,11 @@ const KEY_FOR_BACKEND = { pipeline: 'openrouter', gemini: 'gemini', openai: 'ope
 
 const setStatus = (t) => { $('status').textContent = t; };
 const setState = (s) => { state = s; };
-const online = () => navigator.onLine;
 const optionals = () => settings.get('optionals');
 function logLine(role, text) { const d = document.createElement('div'); d.className = role; d.textContent = (role === 'user' ? '🧑 ' : '🏛️ ') + text; $('log').appendChild(d); $('log').scrollTop = $('log').scrollHeight; }
 function showNearest(pos) { const r = rankByGps(stops, pos, 1)[0]; if (r) { $('nearChip').hidden = false; $('nearChip').textContent = `📍 ${r.stop.name_he} · ${Math.round(r.distanceM)} מ'`; } }
-function updateNet() { $('netDot').classList.toggle('on', online()); }
+// navigator.onLine is always true in the Android WebView → the reachability probe is the truth.
+function updateNet(ok) { $('netDot').classList.toggle('on', !!ok); }
 
 // Adapter status strings (english, backend-specific) → one Hebrew vocabulary for the user.
 export function hebrewStatus(s) {
@@ -64,7 +65,7 @@ async function identify() {
   const ranked = pos ? rankByGps(route, pos, 3) : [];
   const near = ranked.length > 0 && ranked[0].distanceM < 150;
   let id = null, method = 'manual';
-  if (frame && online() && settings.get('useVision') && settings.get('keys').openrouter) {
+  if (frame && settings.get('useVision') && settings.get('keys').openrouter && await isOnline()) {
     const candidates = near ? ranked.map(r => r.stop) : route;
     try { id = await identifyByVision({ apiKey: settings.get('keys').openrouter, model: settings.get('models').vision, candidates, imageDataUrl: frame }); method = 'vision'; }
     catch (e) { setStatus('זיהוי בתמונה נכשל, משתמש ב-GPS'); }
@@ -139,7 +140,7 @@ function missingKey() {
 async function startQa() {
   if (!current) return;
   clearTimeout(offerTimer);
-  if (!online()) {
+  if (!await isOnline()) {
     setStatus('אין רשת כרגע, אענה כשנחזור');
     await new SpeechPlayer().play('אין רשת כרגע, אענה כשנחזור');
     if (narrator.state === 'paused') { narrator.resume(); setState('narrating'); }
@@ -220,7 +221,7 @@ function saveSettings() {
 // ---------- boot ----------
 async function boot() {
   stops = await loadStops();
-  updateNet(); addEventListener('online', updateNet); addEventListener('offline', updateNet);
+  startNetWatch(updateNet);        // probes immediately, then every 15 s; navigator.onLine lies in the WebView
   $('identifyBtn').onclick = identify; $('askBtn').onclick = () => onBargeIn(); $('deepBtn').onclick = goDeep; $('nextBtn').onclick = goNext;
   $('sendTextBtn').onclick = sendTyped; $('wrongBtn').onclick = openPicker; $('pickerClose').onclick = () => { $('pickerModal').hidden = true; };
   $('gearBtn').onclick = openSettings; $('settingsSave').onclick = saveSettings;
