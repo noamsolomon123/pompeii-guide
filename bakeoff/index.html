@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>בייק-אוף קול — מדריך פומפיי</title>
+<style>
+  :root{--bg:#f6f1e7;--ink:#2a2320;--brick:#7b1e1e;--card:#fffdf8;--line:#e6dcc9;--muted:#6b625a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,Arial,sans-serif;padding:14px;max-width:560px;margin-inline:auto}
+  h1{color:var(--brick);font-size:20px;margin:0 0 12px}
+  h2{font-size:16px;margin:0 0 8px;color:var(--brick)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+  label{display:block;font-size:13px;color:var(--muted);margin-top:8px}
+  input,select{width:100%;padding:10px;border:1.5px solid var(--line);border-radius:10px;font:inherit;background:#fff;direction:ltr}
+  .row{display:flex;gap:8px;margin-top:10px}.row>*{flex:1}
+  button{padding:12px;border:0;border-radius:12px;font:inherit;font-weight:700;cursor:pointer;background:var(--brick);color:#fff}
+  button.sec{background:#efe7d6;color:var(--brick)}
+  button:disabled{opacity:.5}
+  .status{font-size:13px;margin-top:8px;color:var(--muted)}
+  .meter{height:8px;background:#eee;border-radius:4px;overflow:hidden;margin-top:6px}
+  .meter>div{height:100%;width:0;background:#5ad07a;transition:width .1s}
+  .log{max-height:220px;overflow:auto;font-size:14px;line-height:1.5;margin-top:10px}
+  .log .user{color:#1d4ed8}.log .model{color:var(--ink)}
+  .tts audio{width:100%;margin-top:6px}
+  .err{color:#b91c1c}
+</style>
+</head>
+<body>
+<h1>🏛️ בייק-אוף קול</h1>
+
+<div class="card">
+  <h2>מפתחות (נשמרים בדפדפן)</h2>
+  <label>OpenRouter API key</label><input id="keyOpenrouter" type="password" autocomplete="off">
+  <label>OpenAI API key</label><input id="keyOpenai" type="password" autocomplete="off">
+  <label>Gemini API key</label><input id="keyGemini" type="password" autocomplete="off">
+  <label>ElevenLabs API key (אופציונלי)</label><input id="keyEleven" type="password" autocomplete="off">
+</div>
+
+<div class="card">
+  <h2>שיחה חיה — בית הווטי</h2>
+  <label>ספק</label>
+  <select id="backend">
+    <option value="openai">A · OpenAI Realtime</option>
+    <option value="pipeline">B · OpenRouter pipeline (STT → LLM → TTS)</option>
+    <option value="gemini">C · Gemini Live</option>
+  </select>
+  <label>מודל (Realtime / LLM)</label><input id="model" value="gpt-realtime-2.1">
+  <label>קול</label><input id="voice" value="marin">
+  <div id="pipelineOpts" hidden>
+    <label>TTS model (pipeline)</label><input id="ttsModel" value="openai/gpt-4o-mini-tts-2025-12-15">
+    <label>STT model (pipeline)</label><input id="sttModel" value="openai/whisper-large-v3-turbo">
+  </div>
+  <div class="row">
+    <button id="connect">🎙️ התחבר ודבר</button>
+    <button id="disconnect" class="sec" disabled>נתק</button>
+  </div>
+  <div class="meter"><div id="level"></div></div>
+  <div class="status" id="status">לא מחובר</div>
+  <div class="row">
+    <input id="textQ" placeholder="שאלה בהקלדה (גיבוי)" style="direction:rtl">
+    <button id="sendText" class="sec" disabled>שלח</button>
+  </div>
+  <div class="log" id="log"></div>
+</div>
+
+<div class="card tts">
+  <h2>TTS — אותו תסריט 30 שניות</h2>
+  <div class="row">
+    <button id="ttsOpenai" class="sec">OpenAI TTS (OpenRouter)</button>
+    <button id="ttsGemini" class="sec">Gemini TTS (OpenRouter)</button>
+    <button id="ttsEleven" class="sec">ElevenLabs</button>
+  </div>
+  <div id="ttsOut"></div>
+</div>
+
+<div class="card">
+  <h2>הערות</h2>
+  <p style="font-size:13px;color:var(--muted);line-height:1.6">
+    לכל ספק: 1) שאל "מי גר כאן?" 2) בזמן שהוא עונה, קטע אותו: "ואיך הם התעשרו?" 3) שאל "מה לחפש בעיניים?"<br>
+    דרג 1–5: הבנת עברית, מבטא, מהירות קטיעה. כתוב ל-<code>docs/superpowers/specs/bakeoff-result.md</code>.
+  </p>
+</div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
