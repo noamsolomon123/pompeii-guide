@@ -1,17 +1,18 @@
 // www/lib/narrator.js
 export class Narrator {
-  constructor({ filePlayer, ttsPlayer }) { this.filePlayer = filePlayer; this.ttsPlayer = ttsPlayer; this.active = null; this.state = 'idle'; this.lastSpoken = ''; }
+  constructor({ filePlayer, ttsPlayer }) { this.filePlayer = filePlayer; this.ttsPlayer = ttsPlayer; this.active = null; this.state = 'idle'; this.lastSpoken = ''; this._tok = 0; }
   async speak(stop, layer) {
+    const tok = ++this._tok;
     const text = stop[layer] || '';
     this.lastSpoken = text; this.state = 'playing';
     try {
       this.active = this.filePlayer;
       await this.filePlayer.play(`./audio/${stop.id}-${layer}.mp3`);
     } catch (e) {
-      if (e?.code !== 'ENOENT') { this.state = 'idle'; this.active = null; throw e; }
+      if (e?.code !== 'ENOENT') throw e;
       this.active = this.ttsPlayer;
       await this.ttsPlayer.play(text);
-    } finally { if (this.state !== 'stopped') this.state = 'idle'; this.active = null; }
+    } finally { if (tok === this._tok) { this.state = 'idle'; this.active = null; } }
   }
   pause() { if (this.state === 'playing') { this.active?.pause(); this.state = 'paused'; } }
   resume() { if (this.state === 'paused') { this.active?.resume(); this.state = 'playing'; } }
@@ -39,7 +40,13 @@ export class SpeechPlayer {
       s.cancel();
       const u = new SpeechSynthesisUtterance(text); u.lang = this.lang;
       const v = s.getVoices().find(v => /^he|^iw/i.test(v.lang)); if (v) u.voice = v;
-      u.rate = 0.98; u.onend = u.onerror = () => resolve(); this.utt = u; s.speak(u);
+      u.rate = 0.98;
+      let done = false;
+      const finish = () => { if (done) return; done = true; clearTimeout(watchdog); clearTimeout(noEngineTimer); resolve(); };
+      u.onend = u.onerror = finish;
+      const watchdog = setTimeout(finish, Math.min(120000, 3000 + text.length * 90));
+      const noEngineTimer = setTimeout(() => { if (!s.speaking && s.getVoices().length === 0) finish(); }, 1500);
+      this.utt = u; s.speak(u);
     });
   }
   pause() { globalThis.speechSynthesis?.pause(); } resume() { globalThis.speechSynthesis?.resume(); } stop() { globalThis.speechSynthesis?.cancel(); }

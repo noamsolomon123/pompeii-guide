@@ -41,7 +41,7 @@ Single page. Purpose: pick live voice backend and TTS voice by ear.
   ```
 - Seed: existing `STOPS` array in `pompeii-guide/index.html` + route tables. Expand with research; cite sources.
 - Proofread step: script `scripts/proofread.mjs` sends each Hebrew field to Gemini with a strict "fix grammar/naturalness, keep meaning, return only text" prompt; diff reviewed by hand before accept.
-- TTS step: `scripts/tts.mjs` → `audio/<id>-open30.mp3`, `audio/<id>-deep.mp3`, `audio/<id>-nav.mp3` using the P1 winner voice.
+- TTS step: `scripts/tts.mjs` → `audio/<id>-open30.mp3`, `audio/<id>-deep.mp3`, `audio/<id>-next_nav.mp3` using the P1 winner voice.
 - GPS: fill exact coords where verifiable (OSM/Wikidata); otherwise `null` — never invent.
 
 ### P3 — App (`www/` = Capacitor webDir; `android/` = generated native project)

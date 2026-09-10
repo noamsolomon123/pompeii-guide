@@ -23,3 +23,20 @@ test('pause/resume/stop route to the active player', async () => {
   assert.equal(n.state, 'playing'); n.pause(); assert.equal(n.state, 'paused'); n.resume(); assert.equal(n.state, 'playing'); n.stop(); resolve(); await p;
   assert.deepEqual(f.calls.slice(1), [['pause'], ['resume'], ['stop']]);
 });
+test('superseded speak() cannot clobber newer call state (generation token)', async () => {
+  const f = fake(), t = fake(); const n = new Narrator({ filePlayer: f, ttsPlayer: t });
+  let resolveA, resolveB, call = 0;
+  f.play = async (x) => {
+    f.calls.push(['play', x]); call++;
+    if (call === 1) await new Promise(r => resolveA = r);
+    else await new Promise(r => resolveB = r);
+  };
+  const pA = n.speak(stop, 'open30');
+  await new Promise(r => setTimeout(r, 0));
+  const pB = n.speak(stop, 'deep');
+  await new Promise(r => setTimeout(r, 0));
+  resolveA(); await pA;
+  assert.equal(n.state, 'playing'); assert.equal(n.lastSpoken, 'עומק');
+  resolveB(); await pB;
+  assert.equal(n.state, 'idle');
+});

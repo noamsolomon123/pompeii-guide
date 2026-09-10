@@ -16,6 +16,7 @@ const narrator = new Narrator({ filePlayer: new AudioFilePlayer(), ttsPlayer: ne
 const camera = new Camera($('video'));
 const gps = new Gps((fix) => { $('gpsDot').classList.add('on'); showNearest(fix.pos); });
 let stops = [], current = null, voice = null, bargeIn = null, state = 'idle', idleTimer = null;
+let narrationGen = 0;
 
 const setStatus = (t) => { $('status').textContent = t; };
 const setState = (s) => { state = s; };
@@ -49,21 +50,26 @@ async function arriveAt(id, method) {
   current = byId(stops, id);
   closeVoice();
   $('stopCard').hidden = false; $('stopName').textContent = current.name_he; $('stopEn').textContent = `${current.name_en} · Regio ${current.regio} · ${method}`; $('log').innerHTML = '';
-  await narrate('open30');
-  if (state !== 'narrating') return;
+  const ok = await narrate('open30');
+  if (!ok) return;
   setState('depthOffer'); setStatus('רוצה שאעמיק? (העמק / הבא / שאלה)');
   armBargeIn();
 }
 async function narrate(layer) {
+  narrator.stop();
+  const gen = ++narrationGen;
   setState('narrating'); setStatus(layer === 'open30' ? 'המדריך מדבר…' : layer === 'deep' ? 'מעמיק…' : 'ניווט…');
   armBargeIn();
   try { await narrator.speak(current, layer); } catch (e) { setStatus('שגיאת שמע: ' + e.message); }
+  if (gen !== narrationGen) return false;
+  return true;
 }
-async function goDeep() { if (!current) return; await narrate('deep'); if (state === 'narrating') { setState('depthOffer'); setStatus('שאלה? או ➡️ הבא'); armBargeIn(); } }
+async function goDeep() { if (!current) return; const ok = await narrate('deep'); if (ok) { setState('depthOffer'); setStatus('שאלה? או ➡️ הבא'); armBargeIn(); } }
 async function goNext() {
   if (!current) return;
   narrator.stop(); closeVoice();
-  await narrate('next_nav');
+  const ok = await narrate('next_nav');
+  if (!ok) return;
   const nxt = nextStop(stops, current.id, optionals());
   setState('navigating'); setStatus(nxt ? `הבא: ${nxt.name_he}` : 'סוף המסלול');
 }
