@@ -1,6 +1,6 @@
 # P4 Emulator Simulation — Results
 
-Run 1 (first run) is below; **[Run 2](#run-2--after-the-device-fixes-2026-09-11)** is at the end of this file.
+Run 1 (first run) is below; **[Run 2](#run-2--after-the-device-fixes-2026-09-11)** and **[Run 3 — full route](#run-3--full-route-2026-09-11)** follow it.
 
 # Run 1 (2026-09-11)
 
@@ -181,4 +181,198 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio3\jbr'; $env:PATH="$env:J
 npx cap sync android; cd android; .\gradlew.bat assembleDebug --no-daemon; cd ..
 npm run sim                    # ~12 min now that narration is spoken
 node scripts/sim/run.mjs --only forum   # one stop, ~4 min
+```
+
+---
+
+# Run 3 — full route (2026-09-11)
+
+The first run where **every stop has coordinates** (`www/stops.json`, 26 stops, 21 `gps_quality: exact`)
+and the first with the **route-aware chooser** wired into `identify()`. APK rebuilt at `d6a01c6`
+(`npx cap sync android` + `gradlew assembleDebug --no-daemon`).
+
+```
+node scripts/sim/run.mjs --fast    →  exit 0, 24/24 PASS + negative PASS + offline PASS
+```
+
+Two changes since run 2:
+
+- `8e7ad27` — `www/app.js`: `identify()` ranks **5** stops (`rankByGps(route, pos, 5)`) and hands them to
+  `chooseStop(ranked, { preferredIds, maxM: 80, tieM: 45 })` with
+  `preferredIds = current ? [nextStop(...)?.id, current.id] : []`. The stop card reads `gps+route` when the
+  route preference decided and `gps` when plain distance did. Harness hooks added:
+  `window.__pg.stopNarration()` and `window.__pg.lastIdentify`.
+- `d6a01c6` — `scripts/sim/run.mjs`: `--fast`, plus `lastIdentify` / `nearChip` on every stop row.
+
+## What `--fast` does (and does not skip)
+
+`stopNarration()` is just `narrator.stop()`. Every `speak()` the flow *awaits* resolves when the player is
+stopped, so a cut-short narration is indistinguishable from a finished one as far as the state machine is
+concerned. Each stop therefore still walks the full path —
+`identifying → narrating → depthOffer → narrating → navigating` — in ~13 s instead of ~3 min:
+
+1. `identify()`, wait for `current.id` (≤ 10 s);
+2. wait for `state === 'narrating'` (≤ 5 s) → `stopNarration()` → wait for `depthOffer` (≤ 10 s).
+   The spoken `רוצים שאעמיק?` offer is stoppable too, so `cutTo()` re-stops once after 3 s if the first
+   `stop()` landed in the window between the `audio/*.mp3` rejection and the TTS call;
+3. `goNext()` → `stopNarration()` once `narrating` → wait for `navigating` and assert the next stop's
+   Hebrew name is in the status line.
+
+`goDeep()` is exercised only in the slow path; `--fast` skips it. `stateAfter` was `depthOffer` on all 24 rows.
+
+## Environment (deltas from run 2)
+
+| Item | Value |
+|---|---|
+| APK | rebuilt from `www/` at `d6a01c6` |
+| AVD | `OnePlus_15`, Android 16 / API 36, WebView 133.0.6943.137 — unchanged |
+| TTS | `NativeTtsPlayer`, `he-IL` among 81 tags — unchanged |
+| Camera | 720×1280 virtual scene, up before the first stop — unchanged |
+| App settings | `useVision=false`, `vad=false`, optionals off |
+| Stops walked | **24** (route order, non-optional). `villa-mysteries` / `chaste-lovers` need `--optionals` |
+
+## Per-stop results (route order, non-optional)
+
+`m` is `lastIdentify.distanceM` — how far the emulator's fix landed from the stop's own coordinates.
+"2nd candidate" is the runner-up from `lastIdentify.candidates`, i.e. what a plain nearest-wins pick
+would have had to beat.
+
+| # | Stop | Expected | Got | Method / reason | m | 2nd candidate | ms | Wall | Result |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | marina-gate | marina-gate | marina-gate | `gps` / nearest | 0 | antiquarium 31 | 4243 | 23 s | **PASS** |
+| 2 | apollo | apollo | apollo | `gps+route` / preferred | 22 | basilica 47 | 1861 | 11 s | **PASS** |
+| 3 | forum | forum | forum | `gps+route` / preferred | 1 | apollo 43 | 916 | 9 s | **PASS** |
+| 4 | jupiter | jupiter | jupiter | `gps+route` / preferred | 13 | forum 48 | 1765 | 11 s | **PASS** |
+| 5 | macellum | macellum | macellum | `gps+route` / preferred | 3 | jupiter 50 | 2054 | 10 s | **PASS** |
+| 6 | basilica | basilica | basilica | `gps+route` / preferred | 6 | apollo 48 | 1520 | 10 s | **PASS** |
+| 7 | antiquarium | antiquarium | antiquarium | `gps+route` / preferred | 15 | marina-gate 38 | 1681 | 9 s | **PASS** |
+| 8 | tragic-poet | tragic-poet | tragic-poet | `gps+route` / preferred | 0 | thermopolium 20 | 1774 | 12 s | **PASS** |
+| 9 | faun | faun | faun | `gps+route` / preferred | 16 | thermopolium 68 | 1405 | 14 s | **PASS** |
+| 10 | vettii | vettii | vettii | `gps+route` / preferred | 1 | faun 79 | 1856 | 19 s | **PASS** |
+| 11 | thermopolium | thermopolium | thermopolium | `gps+route` / preferred | 0 | tragic-poet 20 | 1959 | 16 s | **PASS** |
+| 12 | lupanar | lupanar | lupanar | `gps+route` / preferred | 3 | bakery 109 | 1371 | 17 s | **PASS** |
+| 13 | central-baths | central-baths | central-baths | `gps+route` / preferred | 20 | bakery 104 | 3061 | 14 s | **PASS** |
+| 14 | bakery | bakery | bakery | `gps+route` / preferred | 5 | macellum 108 | 1280 | 14 s | **PASS** |
+| 15 | fullonica | fullonica | fullonica | `gps+route` / preferred | 0 | menander 91 | 1297 | 11 s | **PASS** |
+| 16 | menander | menander | menander | `gps+route` / preferred | 4 | fullonica 87 | 1776 | 10 s | **PASS** |
+| 17 | triangular-forum | triangular-forum | triangular-forum | `gps+route` / preferred | 2 | large-theatre 70 | 2553 | 11 s | **PASS** |
+| 18 | large-theatre | large-theatre | large-theatre | `gps+route` / preferred | 8 | triangular-forum 61 | 1895 | 13 s | **PASS** |
+| 19 | quadriporticus | quadriporticus | quadriporticus | `gps+route` / preferred | 10 | large-theatre 56 | 2380 | 18 s | **PASS** |
+| 20 | octavius-quartio | octavius-quartio | octavius-quartio | `gps+route` / preferred | 0 | venus-shell 44 | 1218 | 13 s | **PASS** |
+| 21 | venus-shell | venus-shell | venus-shell | `gps+route` / preferred | 4 | octavius-quartio 40 | 2232 | 10 s | **PASS** |
+| 22 | fugitives | fugitives | fugitives | `gps+route` / preferred | 0 | palaestra 174 | 1191 | 12 s | **PASS** |
+| 23 | amphitheatre | amphitheatre | amphitheatre | `gps+route` / preferred | 0 | palaestra 123 | 1782 | 15 s | **PASS** |
+| 24 | palaestra | palaestra | palaestra | `gps+route` / preferred | 1 | amphitheatre 122 | 1723 | 15 s | **PASS** |
+
+Every row also passed its navigation assertion (`navPass`): the status line named the next stop in Hebrew,
+and `palaestra` ended with `סוף המסלול`.
+
+### Stops whose `reason` was `preferred`
+
+All 23 stops from #2 on. Stop #1 `marina-gate` is `nearest` by construction — `current` is `null` before the
+first arrival, so `preferredIds` is empty.
+
+**But the tie-break never had to override anything.** In all 24 rows the stop the chooser returned was also
+`candidates[0]`, so a plain nearest-wins pick would have produced the same 24 answers on this data. `preferred`
+fired because the route's next stop *was* the nearest one, not because it beat a closer rival — the harness
+prints a `route tie-break overrode nearest at:` line for real overrides and it printed nothing this run.
+The preference is confirming the GPS here, not correcting it.
+
+### The six adjacency pairs
+
+The pairs the run was meant to stress, with the gap between them and the actual margin the fix produced:
+
+| Pair | Apart | Fix landed | Runner-up | Margin |
+|---|---|---|---|---|
+| marina-gate / antiquarium | 32 m | 0 m / 15 m | 31 m / 38 m | 31 m / 23 m |
+| apollo / forum | 44 m | 22 m / 1 m | 47 m (basilica) / 43 m | 25 m / 42 m |
+| apollo / basilica | 53 m | 22 m / 6 m | 47 m / 48 m | 25 m / 42 m |
+| jupiter / macellum | 53 m | 13 m / 3 m | 48 m (forum) / 50 m | 35 m / 47 m |
+| tragic-poet / thermopolium | 20 m | 0 m / 0 m | 20 m / 20 m | 20 m / 20 m |
+| octavius-quartio / venus-shell | 44 m | 0 m / 4 m | 44 m / 40 m | 44 m / 36 m |
+
+The tightest case is `tragic-poet` / `thermopolium` at 20 m apart: both landed at 0 m from their own
+coordinates, leaving a full 20 m margin. The largest fix error all run was `apollo` at 22 m, and even
+there the runner-up sat 25 m further out. Emulator jitter never came within half the gap to a neighbour,
+which is why the preference was never load-bearing (see finding 12).
+
+## Negative test (outside the walls)
+
+`geo fix` 40.7440, 14.4800 → chip `📍 האנטיקווריום · 554 מ'` → `identify()` → picker opened, status
+`לא זוהה. בחר ידנית.`, `current` unchanged (`palaestra`). **PASS**.
+
+`lastIdentify` records the rejection cleanly: `{ id: null, method: 'manual', distanceM: null, reason: 'none',
+candidates: [antiquarium 554, marina-gate 565, basilica 648, apollo 689, forum 730] }` — `chooseStop` returns
+`none` because `ranked[0].distanceM > maxM`, and the route preference cannot resurrect a stop that is out of
+range (`withinTie` is also capped at `maxM`).
+
+## Offline test
+
+`svc wifi/data disable` → in-page `fetch` fails → net dot goes off → `askBtn.click()` → status
+`אין רשת כרגע, אענה כשנחזור`, state back to `idle`. **PASS**. `navigator.onLine` stayed `true` throughout
+(run-1 finding 2 — the property is simply never consulted). Network restored afterwards.
+
+## Timings
+
+| Phase | Run 2 | Run 3 | Notes |
+|---|---|---|---|
+| Whole run | 709 s (3 stops) | **443 s (24 stops)** | `--fast`; run 2 was `--attached`, run 3 booted the AVD |
+| Emulator boot | – | 43.6 s | cold, headless |
+| `adb install -r -g` | 5.5 s | 6.4 s | |
+| Launch → CDP connect | 2.4 s | 2.0 s | |
+| 24 stops, geo fix → PASS | – | 317 s total | min 9 s, median 13 s, max 23 s |
+| `identify()` alone | 1.5–4.1 s | 0.9–4.2 s | first stop 4.2 s (WebView warm-up), rest ~1–3 s |
+
+Per stop that is ~13 s against ~3–3.7 min in run 2 — roughly a 14× cut, and the reason a 24-stop walk is
+7 min rather than the hours the slow path would need.
+
+## Findings
+
+12. **The route tie-break is currently a no-op on emulator data.** It resolved every stop correctly, but so
+    would plain nearest-wins: the intended stop was `candidates[0]` all 24 times. The emulator's fix error
+    (0–22 m, median ~3 m) is well under half the smallest gap on the route (20 m, tragic-poet/thermopolium),
+    so no tie ever arose. The value of `chooseStop` is therefore **unproven by this run** — it is insurance
+    against real-phone GPS error (5–20 m typical, worse between standing walls), not something run 3
+    demonstrates. Do not read 23 × `preferred` as 23 saves. A real test needs either a deliberately offset
+    fix or a walk on the actual site.
+13. **`tieM: 45` is wider than four of the six adjacency gaps.** `apollo`/`forum` (44 m),
+    `octavius-quartio`/`venus-shell` (44 m), `tragic-poet`/`thermopolium` (20 m) and
+    `marina-gate`/`antiquarium` (32 m) are all inside the 45 m tie window, so at those stops the route
+    preference wins the moment both stops are within `maxM` — including when the walker is genuinely standing
+    at the *other* one of the pair (e.g. doubling back). The failure mode is not "picks the neighbour" but
+    "sticks to the route"; `wrongBtn` → picker is the escape hatch. Left as is — it was chosen deliberately —
+    but it is the knob to revisit if on-site testing shows the guide refusing to notice a backtrack.
+14. **`--fast` costs nothing in state coverage, but does not cover everything.** Because `stopNarration()`
+    resolves the same promise a finished narration would, the `state` transitions are identical; what is lost
+    is the audio itself and, in `--fast`, the `goDeep()` leg. Anything that depends on narration *length*
+    (barge-in timing, the 8 s `OFFER_MS` fallback to `goNext()`) is not exercised by `--fast` and still needs
+    a slow run.
+15. **`gps_quality` does not predict fix error.** The `approx` stops walked here (`forum`, `antiquarium`,
+    `faun`, `octavius-quartio`) landed at 1 m, 15 m, 16 m and 0 m — indistinguishable from the `exact` ones.
+    Expected: the emulator reports back the coordinate it was given, so this run measures emulator jitter,
+    not the accuracy of the underlying coordinate research. Only a real visit can check the latter.
+
+## Status of earlier findings
+
+| # | Finding | Status in run 3 |
+|---|---|---|
+| 1 | GPS reaches the WebView out of the box | unchanged; the `location_mode` fallback never triggered (`report.findings` is empty) |
+| 2 | `navigator.onLine` always `true` | unchanged and still irrelevant — `lib/net.js` decides |
+| 3 | Camera works in the emulator | unchanged, 720×1280 up before stop 1 |
+| 4 | No `speechSynthesis` | unchanged, `NativeTtsPlayer` handles it |
+| 5 | Emulator fix precision | quantified: 0–22 m over 24 stops, median ~3 m |
+| 6 | First identify slower | unchanged (4.2 s vs ~1–3 s) |
+| 7 | Harness `logcat` buffer | unchanged |
+| 8–11 | TTS plugin reachability, `he-IL`, run length, net-probe timing | unchanged; 10 is what `--fast` addresses |
+
+## Reproduce
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio3\jbr'; $env:PATH="$env:JAVA_HOME\bin;$env:PATH"
+npx cap sync android; cd android; .\gradlew.bat assembleDebug --no-daemon; cd ..
+
+node scripts/sim/run.mjs --fast              # full 24-stop walk, ~7 min
+node scripts/sim/run.mjs --fast --optionals  # 26 stops (villa-mysteries, chaste-lovers)
+npm run sim                                  # slow path: real narration + goDeep, hours for 24 stops
+node scripts/sim/run.mjs --only forum        # one stop, spoken
 ```
