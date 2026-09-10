@@ -3,11 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test bakeoff/test/*.test.js www/test/*.test.js",
+    "test": "node --test bakeoff/test/*.test.js www/test/*.test.js scripts/test/*.test.js",
     "serve": "python -m http.server 8080",
     "cap:sync": "cap sync android",
     "apk:debug": "cd android && gradlew.bat assembleDebug",
-    "sim": "node scripts/sim/run.mjs"
+    "sim": "node scripts/sim/run.mjs",
+    "build:stops": "node scripts/build-stops.mjs",
+    "check:stops": "node scripts/build-stops.mjs --check"
   },
   "dependencies": {
     "@capacitor-community/text-to-speech": "^8.0.2",
