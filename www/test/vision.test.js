@@ -11,11 +11,22 @@ test('request lists candidates with cues and attaches the image', () => {
   assert.ok(parts[0].text.includes('forum: Forum (big square)'));
   assert.ok(parts[0].text.includes('jupiter: Temple of Jupiter (podium)'));
   assert.ok(parts[0].text.includes('"none"'));
-  assert.equal(r.max_tokens, 20);
+  assert.equal(r.max_tokens, 64);
+  assert.deepEqual(r.reasoning, { exclude: true, effort: 'low' });
 });
 test('parseVisionAnswer returns a known id or null', () => {
   assert.equal(parseVisionAnswer('jupiter', cands), 'jupiter');
   assert.equal(parseVisionAnswer('  Forum\n', cands), 'forum');
   assert.equal(parseVisionAnswer('none', cands), null);
   assert.equal(parseVisionAnswer('macellum', cands), null);
+});
+test('parseVisionAnswer tolerates markdown, labels and sentences', () => {
+  assert.equal(parseVisionAnswer('**forum**', cands), 'forum');
+  assert.equal(parseVisionAnswer('id: jupiter', cands), 'jupiter');
+  assert.equal(parseVisionAnswer('The Forum.', cands), 'forum');
+  assert.equal(parseVisionAnswer('`jupiter`', cands), 'jupiter');
+  assert.equal(parseVisionAnswer('It is none of them.', cands), null);
+  assert.equal(parseVisionAnswer('', cands), null);
+  assert.equal(parseVisionAnswer(null, cands), null);
+  assert.equal(parseVisionAnswer('forumx', cands), null);   // whole word only
 });

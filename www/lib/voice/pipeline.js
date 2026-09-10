@@ -12,7 +12,7 @@ export class PipelineClient {
   constructor({ apiKey, sttModel = 'openai/whisper-large-v3-turbo', llmModel, ttsModel, voice, systemPrompt }) {
     Object.assign(this, { apiKey, sttModel, llmModel, ttsModel, voice, systemPrompt });
     this.history = []; this.mic = null; this.audio = null;
-    this.chunks = []; this.speaking = false; this.silenceMs = 0; this.speechMs = 0; this.hot = 0; this.playStartedAt = 0; this.busy = false;
+    this.chunks = []; this.speaking = false; this.silenceMs = 0; this.speechMs = 0; this.hot = 0; this.playStartedAt = 0; this.busy = false; this.closed = false;
     this._status = () => {}; this._transcript = () => {}; this._level = () => {};
   }
   onStatus(fn) { this._status = fn; } onTranscript(fn) { this._transcript = fn; } onAudioLevel(fn) { this._level = fn; }
@@ -49,38 +49,45 @@ export class PipelineClient {
   }
 
   async _turn({ base64Wav, text }) {
-    if (this.busy) return; this.busy = true;
+    if (this.busy || this.closed) return; this.busy = true;
     const t0 = performance.now();
     try {
       let userText = text;
       if (!userText) {
         this._status('transcribing…');
         const r = await fetch(OR.transcriptions, { method: 'POST', headers: headers(this.apiKey), body: JSON.stringify(buildTranscription({ model: this.sttModel, base64Wav })) });
+        if (this.closed) return;
         if (!r.ok) throw new Error(`stt ${r.status}: ${(await r.text()).slice(0, 200)}`);
         userText = (await r.json()).text?.trim();
+        if (this.closed) return;
         if (!userText) { this._status('live'); return; }
         this._transcript({ role: 'user', text: userText });
       }
       this.history.push({ role: 'user', content: userText });
       this._status('thinking…');
       const c = await fetch(OR.chat, { method: 'POST', headers: headers(this.apiKey), body: JSON.stringify(buildChat({ model: this.llmModel, systemPrompt: this.systemPrompt, history: this.history })) });
+      if (this.closed) return;
       if (!c.ok) throw new Error(`llm ${c.status}: ${(await c.text()).slice(0, 200)}`);
       const answer = (await c.json()).choices?.[0]?.message?.content?.trim() || '';
+      if (this.closed) return;
       this.history.push({ role: 'assistant', content: answer });
       this._transcript({ role: 'model', text: answer });
       this._status('speaking…');
       const s = await fetch(OR.speech, { method: 'POST', headers: headers(this.apiKey), body: JSON.stringify(buildSpeech({ model: this.ttsModel, text: answer, voice: this.voice })) });
+      if (this.closed) return;
       if (!s.ok) throw new Error(`tts ${s.status}: ${(await s.text()).slice(0, 200)}`);
       const url = URL.createObjectURL(await s.blob());
+      if (this.closed) { URL.revokeObjectURL(url); return; }
       this.audio?.pause();
       this.audio = new Audio(url); this.playStartedAt = performance.now();
-      this.audio.onended = () => this._status('live');
+      this.audio.onended = () => { if (!this.closed) this._status('live'); };
       await this.audio.play();
+      if (this.closed) return;
       this._status(`live (${Math.round(performance.now() - t0)} ms to first audio)`);
-    } catch (e) { this._status('error: ' + e.message); }
+    } catch (e) { if (!this.closed) this._status('error: ' + e.message); }
     finally { this.busy = false; }
   }
 
   sendText(text) { this._turn({ text }); }
-  close() { this.mic?.stop(); this.audio?.pause(); this.audio = null; this.mic = null; this._status('idle'); }
+  close() { this.closed = true; this.mic?.stop(); this.audio?.pause(); this.audio = null; this.mic = null; this._status('idle'); }
 }
