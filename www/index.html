@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7b1e1e">
+<title>מדריך פומפיי</title>
+<style>
+  :root{--bg:#f6f1e7;--ink:#2a2320;--brick:#7b1e1e;--brick2:#9c3a2a;--card:#fffdf8;--muted:#6b625a;--gold:#c9a24b;--line:#e6dcc9}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:system-ui,'Segoe UI',Arial,sans-serif;overscroll-behavior:none}
+  .app{max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
+  header{background:linear-gradient(135deg,var(--brick),var(--brick2));color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5}
+  header h1{font-size:17px;margin:0}
+  .badges{margin-inline-start:auto;display:flex;gap:6px;align-items:center}
+  .badge{font-size:11px;background:rgba(255,255,255,.18);padding:4px 8px;border-radius:20px;display:flex;align-items:center;gap:5px}
+  .dot{width:7px;height:7px;border-radius:50%;background:#e07a5a}.dot.on{background:#5ad07a}
+  .gear{background:none;border:0;color:#fff;font-size:20px;cursor:pointer}
+  main{flex:1;padding:12px;display:flex;flex-direction:column;gap:12px}
+  .cam{position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:3/4}
+  .cam video{width:100%;height:100%;object-fit:cover;display:block}
+  .chip{position:absolute;top:10px;inset-inline-start:10px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:6px 10px;border-radius:20px}
+  .btn{border:0;border-radius:14px;padding:16px;font-size:17px;font-weight:700;font-family:inherit;cursor:pointer;background:var(--brick);color:#fff}
+  .btn.sec{background:var(--card);color:var(--brick);border:1.5px solid var(--line)}
+  .btn:disabled{opacity:.5}
+  .row{display:flex;gap:8px}.row>.btn{flex:1}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+  .card h2{margin:0;font-size:20px;color:var(--brick)}.card .en{font-size:12px;color:var(--muted)}
+  .status{font-size:13px;color:var(--muted);margin-top:6px;min-height:18px}
+  .log{font-size:14px;line-height:1.5;max-height:160px;overflow:auto;margin-top:8px}
+  .log .user{color:#1d4ed8}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+  .modal .box{background:var(--card);border-radius:16px 16px 0 0;padding:16px;width:100%;max-width:520px;max-height:85vh;overflow:auto}
+  .modal h3{margin:0 0 8px;color:var(--brick)}
+  .list button{width:100%;text-align:start;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px;font-family:inherit;font-size:15px;cursor:pointer}
+  label{display:block;font-size:13px;color:var(--muted);margin-top:8px}
+  input,select{width:100%;padding:10px;border:1.5px solid var(--line);border-radius:10px;font:inherit;background:#fff;direction:ltr}
+  .check{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px}.check input{width:auto}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🏛️ מדריך פומפיי</h1>
+    <div class="badges">
+      <div class="badge"><span class="dot" id="gpsDot"></span>GPS</div>
+      <div class="badge"><span class="dot" id="netDot"></span>רשת</div>
+      <button class="gear" id="gearBtn" aria-label="הגדרות">⚙️</button>
+    </div>
+  </header>
+  <main>
+    <div class="cam"><video id="video" playsinline autoplay muted></video><div class="chip" id="nearChip" hidden></div></div>
+    <button class="btn" id="identifyBtn">🔍 זהה</button>
+    <div class="card" id="stopCard" hidden>
+      <h2 id="stopName"></h2><div class="en" id="stopEn"></div>
+      <div class="status" id="status"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn sec" id="askBtn">🎙️ שאלה</button>
+        <button class="btn sec" id="deepBtn">📖 העמק</button>
+        <button class="btn sec" id="nextBtn">➡️ הבא</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <input id="textQ" placeholder="או הקלד שאלה" style="direction:rtl">
+        <button class="btn sec" id="sendTextBtn" style="flex:0 0 auto">שלח</button>
+      </div>
+      <div class="log" id="log"></div>
+      <button class="btn sec" id="wrongBtn" style="margin-top:8px;width:100%">זיהוי שגוי? בחר ידנית</button>
+    </div>
+  </main>
+</div>
+
+<div class="modal" id="pickerModal" hidden><div class="box"><h3>בחר תחנה</h3><div class="list" id="pickerList"></div><button class="btn sec" id="pickerClose" style="width:100%">סגור</button></div></div>
+
+<div class="modal" id="settingsModal" hidden><div class="box">
+  <h3>הגדרות</h3>
+  <label>ספק קול</label>
+  <select id="sBackend"><option value="pipeline">OpenRouter pipeline</option><option value="gemini">Gemini Live</option><option value="openai">OpenAI Realtime</option></select>
+  <label>OpenRouter key</label><input id="sKeyOpenrouter" type="password" autocomplete="off">
+  <label>Gemini key</label><input id="sKeyGemini" type="password" autocomplete="off">
+  <label>OpenAI key</label><input id="sKeyOpenai" type="password" autocomplete="off">
+  <div class="check"><input type="checkbox" id="sVad"><label for="sVad" style="margin:0">קטיעה בקול (VAD)</label></div>
+  <div class="check"><input type="checkbox" id="sVision"><label for="sVision" style="margin:0">זיהוי בתמונה (דורש רשת)</label></div>
+  <div class="check"><input type="checkbox" id="sVilla"><label for="sVilla" style="margin:0">כולל וילה דיי מיסטרי (כניסה 8:30)</label></div>
+  <div class="check"><input type="checkbox" id="sChaste"><label for="sChaste" style="margin:0">כולל אוהבים צנועים (אחרי 10:30)</label></div>
+  <button class="btn" id="settingsSave" style="width:100%;margin-top:12px">שמור</button>
+</div></div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
