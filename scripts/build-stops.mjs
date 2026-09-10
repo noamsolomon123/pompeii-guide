@@ -29,7 +29,7 @@ export const OUTPUT_KEYS = [
   'look_for', 'next_nav', 'faq', 'anecdotes', 'sources',
 ];
 
-const BBOX = { latMin: 40.745, latMax: 40.757, lngMin: 14.478, lngMax: 14.500 };
+const BBOX = { latMin: 40.745, latMax: 40.757, lngMin: 14.474, lngMax: 14.500 }; // lngMin covers Villa dei Misteri (extra moenia)
 const NON_OPTIONAL_ORDER_SET = Array.from({ length: 24 }, (_, i) => i + 1);
 const REPLACEMENT_CHAR = '�';
 const NIQQUD_RE = /[ְ-ׇ]/;
