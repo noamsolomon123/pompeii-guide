@@ -1,5 +1,6 @@
 // scripts/sim/run.mjs — P4 emulator simulation: boot → install → grant → walk stops via GPS → negative → offline → report.
 // Flags: --attached (emulator already running) --headed (window) --only <id> --optionals (enable optional stops) --keep (leave app + emulator running)
+//        --fast (cut every narration short with __pg.stopNarration() instead of listening to ~3 min of Hebrew per stop)
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,7 +17,7 @@ const OUTSIDE = [40.7440, 14.4800]; // ~300 m outside the walls
 const argv = process.argv.slice(2);
 const flag = (f) => argv.includes(f);
 const opt = (f) => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : null; };
-const ATTACHED = flag('--attached'), HEADED = flag('--headed'), ONLY = opt('--only'), OPTIONALS = flag('--optionals'), KEEP = flag('--keep');
+const ATTACHED = flag('--attached'), HEADED = flag('--headed'), ONLY = opt('--only'), OPTIONALS = flag('--optionals'), KEEP = flag('--keep'), FAST = flag('--fast');
 
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 const timings = {};
@@ -24,6 +25,29 @@ const report = { startedAt: new Date().toISOString(), env: {}, timings, stops: [
 let emu = null, cdp = null, failed = false;
 
 const routeOrder = (stops, on) => stops.filter(s => !s.optional || on[s.id]).sort((a, b) => a.order - b.order);
+
+// ---- --fast helpers ----------------------------------------------------------------------------
+// Nothing about the state machine is skipped: every speak() the flow awaits resolves when the
+// player is stopped, so cutting the audio short is exactly what a finished narration looks like
+// (open30 → depthOffer, next_nav → navigating). Without it one stop costs ~3 min of Hebrew.
+const stopNarration = () => cdp.evaluate('window.__pg.stopNarration(); return 1');
+const isState = (s) => cdp.evaluate(`return window.__pg.state === ${JSON.stringify(s)}`);
+const untilState = (s, ms, every = 200) => cdp.waitFor(`return window.__pg.state === ${JSON.stringify(s)}`, ms, every);
+
+// Wait for the narration to start (≤ narrateMs), stop it, then wait for `target` (≤ settleMs).
+// The spoken "רוצים שאעמיק?" offer is stoppable too, so a second stop() covers the race where the
+// first one landed between the audio-file rejection and the TTS call.
+async function cutTo(target, { narrateMs = 5000, settleMs = 10000, retryMs = 3000 } = {}) {
+  await cdp.waitFor(`return ['narrating', ${JSON.stringify(target)}].includes(window.__pg.state)`, narrateMs, 200);
+  if (await isState('narrating')) await stopNarration();
+  if (await untilState(target, retryMs)) return true;
+  if (await isState('narrating')) await stopNarration();
+  return untilState(target, settleMs - retryMs);
+}
+// Leave 'identifying'/'narrating' behind: cut it short in --fast, otherwise sit through it.
+const settled = `return !['identifying','narrating'].includes(window.__pg.state)`;
+const settleNarration = async () => await cdp.evaluate(settled) ? true
+  : FAST ? cutTo('depthOffer') : cdp.waitFor(settled, 130000, 1000);
 
 async function main() {
   const tStart = Date.now();
@@ -90,7 +114,7 @@ async function main() {
       chip = await cdp.waitFor(`return document.getElementById('nearChip').textContent.includes(${JSON.stringify(s.name_he)})`, 15000);
       report.findings.at(-1).recoveredAfterLocationMode3 = chip;
     }
-    row.chip = await cdp.evaluate(`return document.getElementById('nearChip').textContent`);
+    row.nearChip = await cdp.evaluate(`return document.getElementById('nearChip').textContent`);
     if (!chip) { row.pass = false; row.note += ' gps chip never updated'; failed = true; log(`${s.id}: FAIL (no gps in webview)`); continue; }
 
     t = Date.now();
@@ -99,23 +123,29 @@ async function main() {
     row.msIdentify = Date.now() - t;
     row.got = await cdp.evaluate('return window.__pg.current ? window.__pg.current.id : null');
     row.method = await cdp.evaluate(`return document.getElementById('stopEn').textContent`);
+    row.lastIdentify = await cdp.evaluate('return window.__pg.lastIdentify');
     row.pickerOpen = await cdp.evaluate(`return !document.getElementById('pickerModal').hidden`);
     if (row.pickerOpen) await cdp.evaluate(`document.getElementById('pickerModal').hidden = true; return 1`);
-    // wait for opening narration to finish (state leaves 'narrating'/'identifying')
-    await cdp.waitFor(`return !['identifying','narrating'].includes(window.__pg.state)`, 130000, 1000);
+    // opening narration: cut short in --fast, otherwise wait it out (state leaves 'narrating'/'identifying')
+    await settleNarration();
     row.stateAfter = await cdp.evaluate('return window.__pg.state');
     row.statusAfter = await cdp.evaluate(`return document.getElementById('status').textContent`);
     row.pass = hit && row.got === s.id;
-    if (!row.pass) { failed = true; log(`${s.id}: FAIL got=${row.got} picker=${row.pickerOpen} status=${row.statusAfter}`); continue; }
+    if (!row.pass) { failed = true; log(`${s.id}: FAIL got=${row.got} picker=${row.pickerOpen} status=${row.statusAfter} cand=${JSON.stringify(row.lastIdentify?.candidates)}`); continue; }
 
-    await cdp.evaluate('window.__pg.goDeep(); return 1');
-    await cdp.waitFor(`return window.__pg.state === 'depthOffer'`, 130000, 1000);
+    if (!FAST) {
+      await cdp.evaluate('window.__pg.goDeep(); return 1');
+      await cdp.waitFor(`return window.__pg.state === 'depthOffer'`, 130000, 1000);
+    }
     await cdp.evaluate('window.__pg.goNext(); return 1');
-    const nav = await cdp.waitFor(`return window.__pg.state === 'navigating'`, 130000, 1000);
+    const nav = FAST
+      ? await cutTo('navigating')
+      : await cdp.waitFor(`return window.__pg.state === 'navigating'`, 130000, 1000);
     row.navStatus = await cdp.evaluate(`return document.getElementById('status').textContent`);
     row.navPass = nav && (next ? row.navStatus.includes(next.name_he) : row.navStatus.includes('סוף המסלול'));
     if (!row.navPass) { row.pass = false; failed = true; row.note += ` nav expected ${next ? next.name_he : 'end'} got "${row.navStatus}"`; }
-    log(`${s.id}: ${row.pass ? 'PASS' : 'FAIL'} (${row.msIdentify} ms, ${row.method}) → ${row.navStatus}`);
+    const li = row.lastIdentify;
+    log(`${s.id}: ${row.pass ? 'PASS' : 'FAIL'} (${row.msIdentify} ms, ${li?.method}/${li?.reason}, ${li?.distanceM == null ? '-' : Math.round(li.distanceM)} m) → ${row.navStatus}`);
   }
 
   // ---- negative: outside the walls → picker
@@ -130,7 +160,7 @@ async function main() {
     await cdp.evaluate('window.__pg.identify(); return 1');
     const picker = await cdp.waitFor(`return !document.getElementById('pickerModal').hidden`, 10000);
     const after = await cdp.evaluate('return window.__pg.current ? window.__pg.current.id : null');
-    report.negative = { pos: OUTSIDE, chip: await cdp.evaluate(`return document.getElementById('nearChip').textContent`), pickerOpened: picker, currentBefore: before, currentAfter: after, status: await cdp.evaluate(`return document.getElementById('status').textContent`), pass: picker && before === after };
+    report.negative = { pos: OUTSIDE, nearChip: await cdp.evaluate(`return document.getElementById('nearChip').textContent`), pickerOpened: picker, currentBefore: before, currentAfter: after, lastIdentify: await cdp.evaluate('return window.__pg.lastIdentify'), status: await cdp.evaluate(`return document.getElementById('status').textContent`), pass: picker && before === after };
     if (!report.negative.pass) failed = true;
     log('negative:', report.negative.pass ? 'PASS' : 'FAIL', JSON.stringify(report.negative));
     await cdp.evaluate(`document.getElementById('pickerModal').hidden = true; return 1`);
@@ -139,7 +169,7 @@ async function main() {
     log('offline test');
     const hasCurrent = await cdp.evaluate('return !!window.__pg.current');
     if (!hasCurrent) await cdp.evaluate(`window.__pg.arriveAt('forum','manual'); return 1`); // startQa needs a current stop
-    await cdp.waitFor(`return !['identifying','narrating'].includes(window.__pg.state)`, 130000, 1000);
+    await settleNarration();
     const reachable = () => cdp.evaluate(`try{await Promise.race([fetch('https://example.com',{mode:'no-cors',cache:'no-store'}),new Promise((_,j)=>setTimeout(()=>j(new Error('timeout')),8000))]);return true}catch(e){return false}`);
     A.setNetwork(false);
     const fetchReachable = await reachable();
@@ -162,8 +192,16 @@ async function main() {
 }
 
 function printTable() {
-  const rows = report.stops.map(r => ({ order: r.order, stop: r.id, expected: r.expected, got: r.got ?? '-', method: (r.method || '').split('·').pop()?.trim() || '-', result: r.pass === null ? 'SKIP' : r.pass ? 'PASS' : 'FAIL', ms: r.msIdentify ?? '-', note: r.note.trim() }));
+  const rows = report.stops.map(r => ({
+    order: r.order, stop: r.id, expected: r.expected, got: r.got ?? '-',
+    method: (r.method || '').split('·').pop()?.trim() || '-',
+    reason: r.lastIdentify?.reason ?? '-',
+    m: r.lastIdentify?.distanceM == null ? '-' : Math.round(r.lastIdentify.distanceM),
+    result: r.pass === null ? 'SKIP' : r.pass ? 'PASS' : 'FAIL', ms: r.msIdentify ?? '-', note: r.note.trim(),
+  }));
   console.table(rows);
+  const tie = report.stops.filter(r => r.lastIdentify?.reason === 'preferred' && r.lastIdentify.candidates?.[0]?.[0] !== r.got);
+  if (tie.length) console.log('route tie-break overrode nearest at:', tie.map(r => `${r.id} (nearest was ${r.lastIdentify.candidates[0][0]} @ ${r.lastIdentify.candidates[0][1]} m)`).join(', '));
   if (report.negative) console.log('negative:', report.negative.pass ? 'PASS' : 'FAIL');
   if (report.offline) console.log('offline:', report.offline.pass ? 'PASS' : 'FAIL');
   console.log('timings:', JSON.stringify(timings));
