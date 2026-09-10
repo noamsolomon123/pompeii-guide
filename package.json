@@ -4,6 +4,15 @@
   "type": "module",
   "scripts": {
     "test": "node --test bakeoff/test/*.test.js www/test/*.test.js",
-    "serve": "python -m http.server 8080"
+    "serve": "python -m http.server 8080",
+    "cap:sync": "cap sync android",
+    "apk:debug": "cd android && gradlew.bat assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/core": "^8.5.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.1"
   }
 }

@@ -1,0 +1,7 @@
+{
+  "appId": "com.noam.pompeiiguide",
+  "appName": "מדריך פומפיי",
+  "webDir": "www",
+  "server": { "androidScheme": "https", "hostname": "localhost" },
+  "android": { "allowMixedContent": false, "webContentsDebuggingEnabled": true }
+}
