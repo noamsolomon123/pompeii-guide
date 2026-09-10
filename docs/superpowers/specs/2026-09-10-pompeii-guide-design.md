@@ -11,7 +11,7 @@ Voice tour guide for the 24-stop Pompeii route, visit 20.10.2026, ~9:00–13:30.
 | Topic | Decision |
 |---|---|
 | Device | Android only (OnePlus 15), Chrome |
-| Form | Single-page PWA, installed to home screen, GitHub Pages hosting |
+| Form | **Android APK via Capacitor 8** wrapping the vanilla-JS web app in `www/` (decided 2026-09-11; PWA was only for the bake-off). Debug APK built by GitHub Actions, sideloaded to OnePlus 15. All content + audio bundled in `www/` so offline needs no service worker. WebView served as `https://localhost` (secure context → getUserMedia/WebRTC work). Manifest: CAMERA, RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, ACCESS_FINE_LOCATION, INTERNET |
 | Live voice backend | Decided by bake-off (P1) between three adapters: (A) OpenAI Realtime direct, (B) pipeline via OpenRouter (STT → switchable LLM → TTS, barge-in handled locally), (C) Gemini Live direct. Adapter interface keeps all three |
 | Unified wallet | OpenRouter for everything request/response: vision identify, Hebrew proofreading, pipeline Q&A, STT, TTS generation. Realtime speech-to-speech cannot go through OpenRouter (verified 2026-09-10: no WebSocket/WebRTC endpoint), so A and C use their own provider keys |
 | Offline core | 24 stop scripts + pre-generated Hebrew MP3 + navigation + GPS/manual identify — all cached by service worker |
@@ -44,7 +44,8 @@ Single page. Purpose: pick live voice backend and TTS voice by ear.
 - TTS step: `scripts/tts.mjs` → `audio/<id>-open30.mp3`, `audio/<id>-deep.mp3`, `audio/<id>-nav.mp3` using the P1 winner voice.
 - GPS: fill exact coords where verifiable (OSM/Wikidata); otherwise `null` — never invent.
 
-### P3 — App (`src/`, built to `index.html` + `sw.js` + `manifest.json`)
+### P3 — App (`www/` = Capacitor webDir; `android/` = generated native project)
+Split: **P3a** web app core in `www/` (runs in desktop Chrome for dev, backend-agnostic, browser TTS fallback until P2 audio exists). **P3b** Capacitor wrap + GitHub Actions APK. Shared libs move from `bakeoff/lib/` to `www/lib/`; bake-off imports them from there.
 Modules (plain ES modules, no framework, no bundler):
 - `src/identify.js` — `identify({frame, gps}) → {stop, confidence, method}`. GPS haversine ranks stops; top 3 candidates + cues sent to vision model with the JPEG. Offline: nearest by GPS or manual picker. Manual picker always available ("זיהוי שגוי? בחר ידנית").
 - `src/narrator.js` — plays cached MP3 layers. `play(stopId, layer)`, `pause()`, `resume()`, `stop()`. Emits `ended`. After `open30` → asks "רוצה שאעמיק?" (short MP3) and listens for yes/no or tap.
@@ -55,7 +56,7 @@ Modules (plain ES modules, no framework, no bundler):
   - `src/voice/pipeline.js` — local VAD → OpenRouter transcription → OpenRouter chat completion (history kept) → OpenRouter TTS → `<audio>`. Any LLM switchable by model id.
   - Context per spec §8: stop record + last spoken chunk + Q&A history in session.
 - `src/navigator.js` — after narration ends: play `next_nav` MP3; order from `stops.json`; villa/chaste-lovers included only when toggled in settings.
-- `src/offline.js` — `sw.js` precaches shell, `stops.json`, all MP3s. `navigator.onLine` + fetch probe before live call; offline → play `no-network.mp3`.
+- offline — no service worker: everything in `www/` ships inside the APK. `navigator.onLine` + fetch probe before live call; offline → spoken "אין רשת כרגע".
 - `src/settings.js` — keys, backend, VAD on/off, question mode (voice/button), villa toggle, entry time.
 - `src/ui.js` — camera view, big זהה button, current stop card (title only; guide is voice-first), progress row of 24, settings gear.
 
