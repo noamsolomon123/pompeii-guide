@@ -1,0 +1,57 @@
+{
+  "id": "fullonica",
+  "order": 15,
+  "optional": false,
+  "name_he": "המכבסה של סטפנוס",
+  "name_en": "Fullonica of Stephanus",
+  "regio": "I",
+  "gps": [40.750311, 14.489139],
+  "gps_quality": "approx",
+  "hours": "09:00-17:00",
+  "status": "verify_winter",
+  "cues": [
+    "כניסה מהרחוב הראשי, ויה דל אבונדנצה",
+    "בריכת מי גשם באטריום שהוגבהה לאגן גדול",
+    "שלושה אגני אבן מחוברים בחצר האחורית",
+    "חמישה תאי דריכה קטנים ליד האגנים",
+    "מדרכות מוגבהות ומדרגות קטנות סביב האגנים",
+    "כתובות בחירות באדום על החזית, משמאל לכניסה",
+    "חדר קבלה מצויר על רקע שחור עם ציפורים ואמורים מעופפים",
+    "מרזבי חרס בפתח הגג המשוחזר"
+  ],
+  "open30": "אנחנו על ויה דל אבונדנצה, הרחוב הראשי, בכניסה למכבסה של סטפנוס (Fullonica of Stephanus). הבית הזה התחיל כבית מגורים רגיל, עם אטריום וגינה. ואז מישהו הפך אותו למפעל. תראו את הבריכה במרכז האטריום. במקור היא אספה מי גשם למשפחה, ואז הגביהו לה את הדפנות והפכו אותה לאגן כביסה תעשייתי. כאן ניקו בדי צמר בדריכה ברגליים, במים, בחימר ובשתן. כן, שתן, בגלל האמוניה. המקום עבד עד יום ההתפרצות. רוצים שאעמיק? תגידו לי.",
+  "deep": "בואו נעבור על התהליך, כמו שהארכיאולוגים משחזרים אותו. פועל עמד בתא דריכה קטן, חמישה כאלה יש כאן, ודרך יחף על הבד בתערובת של מים, חימר כובסים ושתן ישן. האמוניה שבשתן חתכה את השומן והלנולין מהצמר. אחר כך הבד עבר בשרשרת של שלושה אגני שטיפה מחוברים. מים נקיים נכנסו בקצה אחד, והבד התקדם מהמים המלוכלכים לנקיים. ואז מתחו אותו, סירקו אותו בקוצי דרדר להרמת הסיבים, לפעמים הלבינו בגופרית, ולבסוף כבשו במכבש. שרידי חדר הכבישה נמצאים משמאל לכניסה. ומאיפה השתן? לא ייצרו אותו כאן. הכובסים אספו אותו מכדים ברחובות ומשירותים ציבוריים. ברומא הוטל על זה מס, שמיוחס לנירון וחודש בידי אספסיאנוס בערך בשנת 70 לספירה. מכאן הסיפור המפורסם, כסף לא מסריח. האם המס הזה חל בפומפיי עצמה? זה לא מתועד ישירות, אז זה רקע, לא עובדה מקומית. מי היה סטפנוס? אנחנו מכירים אותו רק מכתובות בחירות צבועות על החזית. סטפנוס מבקש. יש חוקרים שרואים בו את הבעלים, ואחרים, את המנהל. ועוד כתובת שם: כל הכובסים מבקשים. גילדה שלמה שתומכת במועמד על הקיר. ליד הכניסה מצאו שלד, ולידו כאלף ותשעים ססטרצים במטבעות. אולי סטפנוס עצמו, אולי מי ששמר על הקופה, ניסה לברוח עם פדיון היום. זו השערה, לא ודאות. הבית הוסב למכבסה כנראה אחרי רעידת האדמה של שנת 62, ונחפר בין שנת 1912 לשנת 1914. ועוד דבר חשוב. הציור המפורסם של כובסים בעבודה, שמופיע בכל ספרי ההדרכה, לא מכאן. הוא מבית מלאכה אחר בפומפיי, ונמצא היום במוזיאון בנאפולי. החוקר מיקו פלור טוען שהכובסים לא היו מקצוע נחות ומסריח, אלא ענף מכובד ומשולב בחיי העיר. ויכוח פתוח. תריחו רגע את האוויר. פעם זה היה ריח אחר לגמרי.",
+  "look_for": "צאו לרחוב והסתכלו על החזית משמאל לפתח הכניסה. חפשו אותיות אדומות דהויות. אחת הכתובות אומרת: כל הכובסים מבקשים. ענף שלם שתומך במועמד לבחירות, ישירות על הקיר.",
+  "next_nav": "הבא במסלול: בית מננדר, בערך דקה עד שתיים הליכה דרומה מזרחה. הבית נמצא באינסולה עשר ברג'יו אחת, ממש מאחורי הרחוב הראשי.",
+  "faq": [
+    "באמת ניקו כאן בגדים עם שתן? כן. שתן ישן הוא מקור אמוניה טבעי, ועם מים וחימר כובסים הוא שימש לניקוי ולהלבנה של צמר. אספו אותו מכדים ומשירותים ציבוריים ברחבי העיר.",
+    "הבניין תמיד היה מכבסה? לא. הוא התחיל כבית מגורים רגיל עם אטריום, והוסב למכבסה כנראה בשנים שאחרי רעידת האדמה של 62.",
+    "מי היה סטפנוס? מכירים אותו רק מכתובות בחירות על החזית. החוקרים חלוקים אם היה בעלים או מנהל. שלד עם מטבעות ליד הכניסה מקושר אליו בזהירות, לא בוודאות.",
+    "הציור המפורסם של כובסים בעבודה נמצא כאן? לא. הוא מבית מלאכה אחר בפומפיי, המכבסה של ורניוס היפסאוס, והוא מוצג במוזיאון הארכיאולוגי בנאפולי."
+  ],
+  "anecdotes": [
+    "ליד הכניסה מצאו החופרים שלד ולידו כאלף ותשעים ססטרצים במטבעות. אולי סטפנוס, אולי מי ששמר על הקופה, ניסה לברוח עם הפדיון או הסתתר ליד הכספת כשהגל הלוהט הגיע. הזיהוי עם סטפנוס עצמו הוא השערה סבירה, לא ודאות.",
+    "הכובסים הרומיים עבדו על שתן אנושי שנאסף מכדים ומשירותים ציבוריים ברחבי העיר, בגלל האמוניה שבו, שחותכת שומן ומלבינה. זה מתועד היטב, לא הגזמה של מדריכים.",
+    "הציור המפורסם של כובסים בעבודה, אחד דורך בגיגית ואחר בודק בד מתחת למסגרת עם ינשוף, מופיע בספרי הדרכה כאילו הוא מהמכבסה הזאת. הוא מפומפיי, אבל ממכבסה אחרת, של ורניוס היפסאוס, והוא תלוי היום במוזיאון בנאפולי."
+  ],
+  "sources": [
+    "https://pompeiiinpictures.com/pompeiiinpictures/R1/1%2006%2007%20p1.htm",
+    "https://pompeiiinpictures.com/pompeiiinpictures/R1/1%2006%2007%20p2.htm",
+    "https://pompeiiinpictures.com/pompeiiinpictures/R1/1%2006%2007%20p3.htm",
+    "https://pompeiiinpictures.com/pompeiiinpictures/r6/6%2008%2020%20p2.htm",
+    "https://commons.wikimedia.org/wiki/Category:Fullonica_of_Stephanus_(Pompeii)",
+    "https://www.wikidata.org/wiki/Q27070414",
+    "https://pompeiisites.org/en/visiting-info/timetables-and-tickets/",
+    "https://www.italyguides.it/en/campania/pompeii/fullonica-of-stephanus",
+    "https://seepompeii.com/en/luoghi/the-fullonica-of-stephanus-of-pompeii/",
+    "https://www.gpsmycity.com/attractions/fullonica-di-stephanus-(laundry-of-stephanus)-5958.html",
+    "https://www.worldhistory.org/image/11257/the-fullonica-of-stephanus-in-pompeii/",
+    "https://www.researchgate.net/figure/Plan-of-fullonica-of-Stephanus-I67-Pompeii-Source-Miko-Flohr_fig5_309666989",
+    "https://www.researchgate.net/figure/Lower-section-of-the-fresco-of-the-so-called-Pilastro-dei-Fullones-from-the-fullonica-of_fig1_329726292",
+    "https://global.oup.com/academic/product/the-world-of-the-fullo-9780199659357",
+    "https://en.wikipedia.org/wiki/Fullo",
+    "https://en.wikipedia.org/wiki/Pecunia_non_olet",
+    "https://www.historyoftheancientworld.com/2011/02/cleverness-cleanliness-and-urine-in-ancient-rome/"
+  ],
+  "notes": "GPS: Wikimedia Commons / Wikidata Q27070414, footprint level, approx. Hours: winter 9:00-17:00; individual houses rotate out for conservation, verify I.6.7 is open before visit. The 'fullers at work' fresco is from the Fullonica of Veranius Hypsaeus (VI.8.20-21), now in MANN inv. 9774, NOT this building. Stephanus: known only from facade programmata; owner vs manager disputed. Skeleton with ~1,089-1,090 sesterces near entrance: link to Stephanus is inference. Urine tax (vectigal urinae): Roman context, not attested for Pompeii. Conversion date 'after AD 62': likely, not proven."
+}
