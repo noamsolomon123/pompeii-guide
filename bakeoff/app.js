@@ -23,6 +23,7 @@ $('backend').addEventListener('change', () => {
   const b = $('backend').value; const d = DEFAULTS[b];
   $('model').value = d.model; $('voice').value = d.voice; $('pipelineOpts').hidden = b !== 'pipeline';
 });
+$('backend').dispatchEvent(new Event('change'));
 
 let client = null;
 function setStatus(s) { $('status').textContent = s; }
@@ -43,16 +44,21 @@ $('connect').addEventListener('click', async () => {
     client.onTranscript(({ role, text }) => logLine(role, text));
     client.onAudioLevel((l) => { $('level').style.width = `${Math.round(l * 100)}%`; });
     $('connect').disabled = true;
+    $('disconnect').disabled = false;
     await client.connect();
-    $('disconnect').disabled = false; $('sendText').disabled = false;
+    $('sendText').disabled = false;
   } catch (e) {
-    setStatus('שגיאה: ' + e.message); $('connect').disabled = false; client?.close(); client = null;
+    $('disconnect').disabled = true;
+    client?.close(); client = null;
+    $('connect').disabled = false;
+    setStatus('שגיאה: ' + e.message);
   }
 });
 
 $('disconnect').addEventListener('click', () => {
+  $('disconnect').disabled = true;
   client?.close(); client = null;
-  $('connect').disabled = false; $('disconnect').disabled = true; $('sendText').disabled = true;
+  $('connect').disabled = false; $('sendText').disabled = true;
   $('level').style.width = '0%';
 });
 

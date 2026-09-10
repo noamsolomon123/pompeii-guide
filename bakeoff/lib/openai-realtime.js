@@ -30,7 +30,24 @@ export class OpenAIRealtimeClient {
     });
     if (!res.ok) { const t = await res.text(); this._status(`error: ${res.status}`); throw new Error(`realtime calls ${res.status}: ${t.slice(0, 200)}`); }
     await this.pc.setRemoteDescription({ type: 'answer', sdp: await res.text() });
-    await new Promise((resolve) => { if (this.dc.readyState === 'open') resolve(); else this.dc.onopen = resolve; });
+    await new Promise((resolve, reject) => {
+      if (this.dc.readyState === 'open') { resolve(); return; }
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return; settled = true;
+        reject(new Error('realtime: data channel did not open in 15s'));
+      }, 15000);
+      const done = () => { if (settled) return; settled = true; clearTimeout(timer); resolve(); };
+      const fail = (err) => { if (settled) return; settled = true; clearTimeout(timer); reject(err); };
+      this.dc.onopen = done;
+      this.dc.onerror = () => fail(new Error('realtime: data channel error'));
+      this.dc.onclose = () => fail(new Error('realtime: data channel closed before open'));
+      this.pc.onconnectionstatechange = () => {
+        if (this.pc.connectionState === 'failed' || this.pc.connectionState === 'closed') {
+          fail(new Error(`realtime: peer connection ${this.pc.connectionState}`));
+        }
+      };
+    });
     this.dc.send(JSON.stringify(buildSessionUpdate({ instructions: this.systemPrompt, voice: this.voice })));
     this._status('live');
   }
@@ -42,8 +59,13 @@ export class OpenAIRealtimeClient {
   }
   sendText(text) { this.dc?.send(JSON.stringify(buildTextTurn(text))); this.dc?.send(JSON.stringify(buildResponseCreate())); }
   close() {
-    clearInterval(this.levelTimer); this._levelCtx?.close();
-    this.stream?.getTracks().forEach(t => t.stop()); this.dc?.close(); this.pc?.close(); this.audioEl?.remove();
-    this.pc = this.dc = this.stream = this.audioEl = null; this._status('idle');
+    if (this.levelTimer) { clearInterval(this.levelTimer); this.levelTimer = null; }
+    this._levelCtx?.close(); this._levelCtx = null;
+    this.stream?.getTracks().forEach(t => t.stop());
+    if (this.dc) { this.dc.onopen = this.dc.onmessage = this.dc.onerror = this.dc.onclose = null; }
+    if (this.pc) { this.pc.onconnectionstatechange = null; this.pc.ontrack = null; }
+    this.dc?.close(); this.pc?.close(); this.audioEl?.remove();
+    this.pc = this.dc = this.stream = this.audioEl = null;
+    this._status('idle');
   }
 }

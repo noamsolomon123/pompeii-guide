@@ -52,5 +52,10 @@ export class GeminiLiveClient {
     await this.mic.start();
   }
   sendText(text) { this.ws?.send(JSON.stringify(buildTextTurn(text))); }
-  close() { this.mic?.stop(); this.player.close(); this.ws?.close(); this.ws = null; this._status('idle'); }
+  close() {
+    this.mic?.stop(); this.player.close();
+    if (this.ws) { this.ws.onopen = this.ws.onmessage = this.ws.onerror = this.ws.onclose = null; }
+    this.ws?.close(); this.ws = null;
+    this._status('idle');
+  }
 }

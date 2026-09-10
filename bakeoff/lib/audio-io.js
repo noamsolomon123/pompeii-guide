@@ -51,6 +51,7 @@ export class PcmPlayer {
   enqueue(b64) {
     this.ensure();
     const i16 = base64ToInt16(b64);
+    if (!i16.length) return;
     const f32 = new Float32Array(i16.length);
     for (let i = 0; i < i16.length; i++) f32[i] = i16[i] / 32768;
     const buf = this.ctx.createBuffer(1, f32.length, this.sampleRate);
