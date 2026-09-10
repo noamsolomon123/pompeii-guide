@@ -8,7 +8,7 @@ export const EMU = `${SDK}\\emulator\\emulator.exe`;
 export const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 // Synchronous adb call; throws on non-zero exit (stderr included in the error message).
-export const adb = (...args) => execFileSync(ADB, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 }).trim();
+export const adb = (...args) => execFileSync(ADB, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000, maxBuffer: 64 * 1024 * 1024 }).trim();
 
 // Boot the AVD detached so the harness can outlive / be independent of it. Returns the child (pid used for cleanup).
 export function bootEmulator(avd, { headless = true } = {}) {
@@ -53,7 +53,7 @@ export const unforward = (port) => { try { adb('forward', '--remove', `tcp:${por
 
 export const setNetwork = (on) => { adb('shell', 'svc', 'wifi', on ? 'enable' : 'disable'); adb('shell', 'svc', 'data', on ? 'enable' : 'disable'); };
 export const logcat = (pattern, last = 40) => {
-  const out = adb('logcat', '-d');
+  const out = adb('logcat', '-d', '-t', '4000');
   const re = new RegExp(pattern);
   return out.split('\n').filter(l => re.test(l)).slice(-last);
 };

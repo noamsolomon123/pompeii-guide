@@ -6,7 +6,8 @@
     "test": "node --test bakeoff/test/*.test.js www/test/*.test.js",
     "serve": "python -m http.server 8080",
     "cap:sync": "cap sync android",
-    "apk:debug": "cd android && gradlew.bat assembleDebug"
+    "apk:debug": "cd android && gradlew.bat assembleDebug",
+    "sim": "node scripts/sim/run.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.1",
