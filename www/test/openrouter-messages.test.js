@@ -1,7 +1,7 @@
 // bakeoff/test/openrouter-messages.test.js
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { OR, headers, buildTranscription, buildChat, buildSpeech } from '../lib/openrouter-messages.js';
+import { OR, headers, buildTranscription, buildChat, buildSpeech } from '../lib/voice/openrouter-messages.js';
 
 test('endpoints', () => {
   assert.equal(OR.transcriptions, 'https://openrouter.ai/api/v1/audio/transcriptions');

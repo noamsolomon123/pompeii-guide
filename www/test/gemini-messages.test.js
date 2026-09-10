@@ -1,7 +1,7 @@
 // bakeoff/test/gemini-messages.test.js
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSetup, buildAudioChunk, buildTextTurn, parseServerMessage, wsUrl } from '../lib/gemini-messages.js';
+import { buildSetup, buildAudioChunk, buildTextTurn, parseServerMessage, wsUrl } from '../lib/voice/gemini-messages.js';
 
 test('wsUrl embeds key', () => {
   assert.equal(wsUrl('K1'),

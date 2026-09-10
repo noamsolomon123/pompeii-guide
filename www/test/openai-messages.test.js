@@ -1,7 +1,7 @@
 // bakeoff/test/openai-messages.test.js
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSessionUpdate, buildTextTurn, buildResponseCreate, parseServerEvent, callsUrl } from '../lib/openai-messages.js';
+import { buildSessionUpdate, buildTextTurn, buildResponseCreate, parseServerEvent, callsUrl } from '../lib/voice/openai-messages.js';
 
 test('callsUrl includes model', () => {
   assert.equal(callsUrl('gpt-realtime-2'), 'https://api.openai.com/v1/realtime/calls?model=gpt-realtime-2');

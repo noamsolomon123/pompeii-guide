@@ -1,9 +1,9 @@
 // bakeoff/app.js
 import { SYSTEM_PROMPT, TTS_SCRIPT } from './persona.js';
-import { GeminiLiveClient } from './lib/gemini-live.js';
-import { OpenAIRealtimeClient } from './lib/openai-realtime.js';
-import { PipelineClient } from './lib/pipeline.js';
-import { openrouterTts, elevenTts, TTS_PRESETS } from './lib/tts.js';
+import { GeminiLiveClient } from '../www/lib/voice/gemini-live.js';
+import { OpenAIRealtimeClient } from '../www/lib/voice/openai-realtime.js';
+import { PipelineClient } from '../www/lib/voice/pipeline.js';
+import { openrouterTts, elevenTts, TTS_PRESETS } from '../www/lib/voice/tts.js';
 
 const $ = (id) => document.getElementById(id);
 const DEFAULTS = {

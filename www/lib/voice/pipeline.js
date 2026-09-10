@@ -1,6 +1,6 @@
 // bakeoff/lib/pipeline.js
-import { MicCapture } from './audio-io.js';
-import { base64ToInt16, wavFromInt16, int16ToBase64 } from './pcm.js';
+import { MicCapture } from '../audio-io.js';
+import { base64ToInt16, wavFromInt16, int16ToBase64 } from '../pcm.js';
 import { OR, headers, buildTranscription, buildChat, buildSpeech } from './openrouter-messages.js';
 
 const START = 0.12;      // RMS level (0..1) that counts as speech

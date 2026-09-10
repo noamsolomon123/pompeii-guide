@@ -1,6 +1,6 @@
 // bakeoff/lib/gemini-live.js
 import { wsUrl, buildSetup, buildAudioChunk, buildTextTurn, parseServerMessage } from './gemini-messages.js';
-import { MicCapture, PcmPlayer } from './audio-io.js';
+import { MicCapture, PcmPlayer } from '../audio-io.js';
 
 export class GeminiLiveClient {
   constructor({ apiKey, model, voice, systemPrompt }) {
