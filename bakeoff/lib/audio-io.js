@@ -11,13 +11,19 @@ export class MicCapture {
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
     });
-    this.ctx = new AudioContext({ sampleRate: 48000 });
+    this.ctx = new AudioContext({ sampleRate: this.targetRate });
+    const srcRate = this.ctx.sampleRate;
+    const needsDownsample = srcRate !== this.targetRate;
+    if (needsDownsample && !Number.isInteger(srcRate / this.targetRate)) {
+      this.stop();
+      throw new Error(`mic sample rate ${srcRate} not a multiple of ${this.targetRate}`);
+    }
     await this.ctx.audioWorklet.addModule(new URL('./worklet-capture.js', import.meta.url));
     const src = this.ctx.createMediaStreamSource(this.stream);
     this.node = new AudioWorkletNode(this.ctx, 'capture-processor');
     src.connect(this.node);
     let acc = new Float32Array(0);
-    const chunkLen = Math.round(this.ctx.sampleRate * 0.1); // 100 ms
+    const chunkLen = Math.round(srcRate * 0.1); // 100 ms
     this.node.port.onmessage = (e) => {
       const f = e.data;
       const merged = new Float32Array(acc.length + f.length); merged.set(acc); merged.set(f, acc.length); acc = merged;
@@ -25,7 +31,7 @@ export class MicCapture {
         const frame = acc.subarray(0, chunkLen); acc = acc.subarray(chunkLen).slice(0);
         let sum = 0; for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
         this.onLevel?.(Math.min(1, Math.sqrt(sum / frame.length) * 4));
-        const ds = downsample(frame, this.ctx.sampleRate, this.targetRate);
+        const ds = needsDownsample ? downsample(frame, srcRate, this.targetRate) : frame;
         this.onChunk?.(int16ToBase64(floatToInt16(ds)));
       }
     };

@@ -33,3 +33,42 @@ test('wavFromInt16 writes a 44-byte header with correct sizes', () => {
   assert.equal(dv.getUint16(34, true), 16);         // bits
   assert.equal(dv.getUint32(40, true), 8);          // data size
 });
+
+test('int16 <-> base64 round trip on 40000 samples exercises 0x8000 chunking', () => {
+  const src = new Int16Array(40000);
+  for (let i = 0; i < src.length; i++) src[i] = i % 65536 - 32768;
+  const back = base64ToInt16(int16ToBase64(src));
+  assert.equal(back.length, src.length);
+  assert.deepEqual(Array.from(back), Array.from(src));
+});
+
+test('int16ToBase64 honours byteOffset of a subarray view', () => {
+  const full = new Int16Array([10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]);
+  const view = full.subarray(3, 9);
+  assert.notEqual(view.byteOffset, 0);
+  assert.deepEqual(Array.from(base64ToInt16(int16ToBase64(view))), [13, 14, 15, 16, 17, 18]);
+});
+
+test('base64ToInt16 drops a trailing odd byte', () => {
+  const b64 = Buffer.from([1, 0, 2, 0, 3]).toString('base64'); // 5 bytes
+  const out = base64ToInt16(b64);
+  assert.equal(out.length, 2);
+  assert.deepEqual(Array.from(out), [1, 2]);
+});
+
+test('downsample throws on non-integer ratio', () => {
+  assert.throws(() => downsample(new Float32Array(10), 44100, 16000), /non-integer ratio/);
+});
+
+test('wavFromInt16 writes RIFF markers, byteRate, blockAlign and payload', () => {
+  const pcm = new Int16Array([100, -100, 32767, -32768, 7]);
+  const buf = wavFromInt16(pcm, 24000);
+  const dv = new DataView(buf);
+  const tag = (o) => String.fromCharCode(dv.getUint8(o), dv.getUint8(o + 1), dv.getUint8(o + 2), dv.getUint8(o + 3));
+  assert.equal(tag(8), 'WAVE');
+  assert.equal(tag(12), 'fmt ');
+  assert.equal(tag(36), 'data');
+  assert.equal(dv.getUint32(28, true), 48000);     // byteRate = sampleRate * blockAlign
+  assert.equal(dv.getUint16(32, true), 2);         // blockAlign
+  assert.deepEqual(Array.from(new Int16Array(buf, 44)), Array.from(pcm));
+});
