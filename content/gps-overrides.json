@@ -1,0 +1,461 @@
+{
+  "_meta": {
+    "checked": "2026-09-11",
+    "method": "OpenStreetMap Overpass (overpass-api.de, nwr name-regex query within Pompeii park bbox [40.745,14.478,40.757,14.500] plus two follow-up regex queries for Forum/Thermopolium terms and for Villa dei Misteri outside the bbox), cross-checked against Wikidata P625 for major corrections (Jupiter Q3309400, Venus in the Shell Q27685715, Bakery of Popidius Priscus Q27686667, Triangular Forum Q3748439, Forum of Pompeii Q3748443) and against content/research/<id>.md Identity sections. Distances computed via haversine on the corrected route order 0(optional)->1->...->24."
+  },
+  "villa-mysteries": {
+    "gps": [
+      40.7537173,
+      14.4775307
+    ],
+    "gps_quality": "approx",
+    "source": "OSM way 1230956516 'Villa dei Misteri' (building footprint centroid)",
+    "note": "Refined only slightly (~3 m) from prior Wikipedia-infobox value; effectively confirmed. Lies west of the query bbox (14.478 W) because it is genuinely extra-moenia (outside the city walls), not a GPS error."
+  },
+  "marina-gate": {
+    "gps": [
+      40.748509,
+      14.4830852
+    ],
+    "gps_quality": "exact",
+    "source": "OSM node 317723948 'Porta Marina' (historic=city_gate)",
+    "note": "confirmed - exact match to existing value (OSM node is the same source originally used)."
+  },
+  "apollo": {
+    "gps": [
+      40.7492133,
+      14.4844162
+    ],
+    "gps_quality": "exact",
+    "source": "OSM way 240573968 'Tempio di Apollo'",
+    "note": "Upgraded approx->exact: OSM surveyed way matches prior Wikipedia-infobox estimate within ~1 m."
+  },
+  "forum": {
+    "gps": [
+      40.74945,
+      14.484831
+    ],
+    "gps_quality": "approx",
+    "source": "Wikidata Q3748443 'Forum of Pompeii' (40.74944722,14.484825), cross-checked",
+    "note": "confirmed - Wikidata value matches existing value within <1 m. No plain 'Foro' feature in OSM for this bbox; plaza-centroid so kept approx."
+  },
+  "jupiter": {
+    "gps": [
+      40.749947,
+      14.4845076
+    ],
+    "gps_quality": "exact",
+    "source": "OSM way 240715566 'Tempio di Giove (VII.8.1)'; cross-checked Wikidata Q3309400 (40.7499,14.4845)",
+    "note": "CORRECTED. Prior value (40.755556,14.490278) was ~830 m NE of the Forum and contradicted every source's 'north end of the Forum' placement (flagged as a conflict in the research file). Current Wikidata Q3309400 actually reads 40.7499,14.4845 (the research file's cited 40.755556,14.490278 does not match live Wikidata - likely a stale/mistyped DMS-to-decimal conversion). OSM and Wikidata now agree to ~10 m. High confidence."
+  },
+  "macellum": {
+    "gps": [
+      40.7500719,
+      14.4851167
+    ],
+    "gps_quality": "exact",
+    "source": "OSM way 240715560 'Macellum (VII.9.7)'",
+    "note": "confirmed - matches prior Wikidata-sourced value within ~2 m."
+  },
+  "basilica": {
+    "gps": [
+      40.7487369,
+      14.4844795
+    ],
+    "gps_quality": "exact",
+    "source": "OSM way 240573966 'Basilica di Pompei (VIII.1.1)'",
+    "note": "Upgraded approx->exact: OSM matches the prior Wikidata decimal value within ~5 m."
+  },
+  "antiquarium": {
+    "gps": [
+      40.7482951,
+      14.4833309
+    ],
+    "gps_quality": "approx",
+    "source": "OSM node 8362572570 'Antiquarium di Pompei'",
+    "note": "Refined ~27 m from prior Wikidata point. Kept approx: multi-room building, node is a representative entrance-area point."
+  },
+  "tragic-poet": {
+    "gps": [
+      40.7507502,
+      14.4837814
+    ],
+    "gps_quality": "exact",
+    "source": "OSM relation 4192268 'Casa del Poeta Tragico (VI.8.5)'",
+    "note": "confirmed - matches prior value within ~9 m."
+  },
+  "faun": {
+    "gps": [
+      40.7513726,
+      14.4845357
+    ],
+    "gps_quality": "approx",
+    "source": "OSM way 240715554 'Casa del Fauno'",
+    "note": "confirmed - matches prior value within ~14 m. Kept approx: house spans a full insula (~3000 m2), single point is a centroid."
+  },
+  "vettii": {
+    "gps": [
+      40.7520904,
+      14.4845733
+    ],
+    "gps_quality": "exact",
+    "source": "OSM relation 3247807 'Casa dei Vettii (VI.15.1)'",
+    "note": "confirmed - matches prior value within ~3 m."
+  },
+  "thermopolium": {
+    "gps": [
+      40.7507352,
+      14.4840163
+    ],
+    "gps_quality": "exact",
+    "source": "OSM way 1086694489 'Thermopolium Caupona (VI.8.9)'",
+    "note": "CORRECTED. Prior value was explicitly a placeholder (the Forum Baths' Wikidata point across the street, since the research file found no direct point for VI.8.9). OSM now has the actual VI.8.9 building tagged by that exact address, ~37 m from the placeholder. Cross-check: OSM 'Terme del Foro (VII.5.2)' way (40.7503359,14.4841235, the Forum Baths) sits ~44 m away, consistent with the two being across Via delle Terme from each other as expected. High confidence."
+  },
+  "lupanar": {
+    "gps": [
+      40.750286,
+      14.4867947
+    ],
+    "gps_quality": "exact",
+    "source": "OSM way 240573967 'Lupanare (VII.12.18)'",
+    "note": "Upgraded approx->exact: matches prior Wikidata-sourced value within ~2 m and correctly identifies the famous brothel at VII.12.18 (a second OSM feature tagged 'Lupanare (VII.6.35)' near the Forum is a different, unrelated building and was not used)."
+  },
+  "central-baths": {
+    "gps": [
+      40.7515503,
+      14.4867771
+    ],
+    "gps_quality": "exact",
+    "source": "OSM way 356867685 'Terme centrali di Pompei'",
+    "note": "Upgraded approx->exact: matches prior Wikidata insula-level point within ~9 m."
+  },
+  "chaste-lovers": {
+    "gps": [
+      40.750938,
+      14.4899557
+    ],
+    "gps_quality": "exact",
+    "source": "OSM node 5010108076 'Casa dei Casti Amanti (IX.12.6)'",
+    "note": "Optional stop, upgraded approx->exact: matches prior value within ~9 m."
+  },
+  "bakery": {
+    "gps": [
+      40.7508792,
+      14.4857238
+    ],
+    "gps_quality": "exact",
+    "source": "OSM way 1086248713 'Panificio di Popidius Priscus (VII.2.22)'; cross-checked Wikidata Q27686667 (40.75088123,14.48571200)",
+    "note": "CORRECTED. Prior value (40.75,14.4861) was explicitly flagged in the research file as Pompeii's whole-site reference point (no building-level geocode had been found). OSM and Wikidata now independently agree on the actual VII.2.22 bakery building to within ~1 m of each other. Falls inside the task's expected 'Via degli Augustali / Vicolo Storto' area. High confidence."
+  },
+  "fullonica": {
+    "gps": [
+      40.7502861,
+      14.4891237
+    ],
+    "gps_quality": "exact",
+    "source": "OSM node 2033057382 'Fullonica di Stephanus (I.6.7)'",
+    "note": "Upgraded approx->exact: matches prior Wikidata-sourced value within ~3 m."
+  },
+  "menander": {
+    "gps": [
+      40.7497912,
+      14.4899859
+    ],
+    "gps_quality": "exact",
+    "source": "OSM relation 14481353 'Casa del Menandro (I.10.4)'",
+    "note": "Upgraded approx->exact: matches prior DMS-converted value within ~10 m."
+  },
+  "triangular-forum": {
+    "gps": [
+      40.749142,
+      14.4877
+    ],
+    "gps_quality": "exact",
+    "source": "Wikidata Q3748439 'Triangular forum' (40.748915,14.487699), cross-checked",
+    "note": "confirmed unchanged - Wikidata matches the existing value within ~25 m. An OSM way (id 1363332206) for the same feature centers ~80 m further southwest (likely the full trapezoidal precinct centroid vs. the propylon/temple area used here); Wikidata/original point kept as the more tour-relevant anchor near the entrance and Doric Temple."
+  },
+  "large-theatre": {
+    "gps": [
+      40.7488242,
+      14.4884036
+    ],
+    "gps_quality": "exact",
+    "source": "OSM relation 14673806 'Teatro Grande (VIII.7.20)'",
+    "note": "confirmed - matches prior value within ~3 m."
+  },
+  "quadriporticus": {
+    "gps": [
+      40.7483489,
+      14.4888769
+    ],
+    "gps_quality": "exact",
+    "source": "OSM node 2032026654 'Quadriportico dei Teatri (VIII.7.16)'",
+    "note": "confirmed - matches prior value within ~4 m."
+  },
+  "octavius-quartio": {
+    "gps": [
+      40.7514175,
+      14.4927263
+    ],
+    "gps_quality": "approx",
+    "source": "OSM way 28930585 'Giardino di Octavius Quartio'",
+    "note": "Refined ~34 m from prior value (garden feature point vs. house-centroid estimate). Kept approx: point is the garden, not a surveyed house-entrance node."
+  },
+  "venus-shell": {
+    "gps": [
+      40.7518125,
+      14.4927848
+    ],
+    "gps_quality": "exact",
+    "source": "OSM way 59559263 'Casa della Venere in Conchiglia (II.3.3)'; cross-checked Wikidata Q27685715 (40.7519567,14.4927226)",
+    "note": "CORRECTED. Prior value (40.751333,14.486788) was ~480 m west of Octavius Quartio, which the research file itself flagged as inconsistent with II.3.3 adjoining II.2.2. OSM and Wikidata now independently agree (within ~16 m of each other) on a point immediately next to Octavius Quartio's garden, matching the task's expected ~40.7513,14.4925 area. High confidence."
+  },
+  "fugitives": {
+    "gps": [
+      40.7495303,
+      14.4925789
+    ],
+    "gps_quality": "exact",
+    "source": "OSM way 28929572 'Orto dei Fuggiaschi (I.21.6)'",
+    "note": "Upgraded approx->exact: matches prior Wikipedia-centroid value within ~8 m."
+  },
+  "amphitheatre": {
+    "gps": [
+      40.7512663,
+      14.4951778
+    ],
+    "gps_quality": "exact",
+    "source": "OSM relation 57304 'Anfiteatro romano di Pompei (II.6.1)'",
+    "note": "confirmed - matches prior value within ~10 m."
+  },
+  "palaestra": {
+    "gps": [
+      40.7507366,
+      14.493894
+    ],
+    "gps_quality": "exact",
+    "source": "OSM way 28929970 'Palestra Grande (II.7.1)'",
+    "note": "confirmed - matches prior value within ~9 m."
+  },
+  "_distances": [
+    {
+      "from": "villa-mysteries",
+      "from_order": 0,
+      "to": "marina-gate",
+      "to_order": 1,
+      "meters": 744.5
+    },
+    {
+      "from": "marina-gate",
+      "from_order": 1,
+      "to": "apollo",
+      "to_order": 2,
+      "meters": 136.8
+    },
+    {
+      "from": "apollo",
+      "from_order": 2,
+      "to": "forum",
+      "to_order": 3,
+      "meters": 43.7
+    },
+    {
+      "from": "forum",
+      "from_order": 3,
+      "to": "jupiter",
+      "to_order": 4,
+      "meters": 61.6
+    },
+    {
+      "from": "jupiter",
+      "from_order": 4,
+      "to": "macellum",
+      "to_order": 5,
+      "meters": 53.2
+    },
+    {
+      "from": "macellum",
+      "from_order": 5,
+      "to": "basilica",
+      "to_order": 6,
+      "meters": 157.9
+    },
+    {
+      "from": "basilica",
+      "from_order": 6,
+      "to": "antiquarium",
+      "to_order": 7,
+      "meters": 108.5
+    },
+    {
+      "from": "antiquarium",
+      "from_order": 7,
+      "to": "tragic-poet",
+      "to_order": 8,
+      "meters": 275.6
+    },
+    {
+      "from": "tragic-poet",
+      "from_order": 8,
+      "to": "faun",
+      "to_order": 9,
+      "meters": 94
+    },
+    {
+      "from": "faun",
+      "from_order": 9,
+      "to": "vettii",
+      "to_order": 10,
+      "meters": 79.9
+    },
+    {
+      "from": "vettii",
+      "from_order": 10,
+      "to": "thermopolium",
+      "to_order": 11,
+      "meters": 157.8
+    },
+    {
+      "from": "thermopolium",
+      "from_order": 11,
+      "to": "lupanar",
+      "to_order": 12,
+      "meters": 239.3
+    },
+    {
+      "from": "lupanar",
+      "from_order": 12,
+      "to": "central-baths",
+      "to_order": 13,
+      "meters": 140.6
+    },
+    {
+      "from": "central-baths",
+      "from_order": 13,
+      "to": "chaste-lovers",
+      "to_order": 13.5,
+      "meters": 276.3
+    },
+    {
+      "from": "chaste-lovers",
+      "from_order": 13.5,
+      "to": "bakery",
+      "to_order": 14,
+      "meters": 356.5
+    },
+    {
+      "from": "bakery",
+      "from_order": 14,
+      "to": "fullonica",
+      "to_order": 15,
+      "meters": 293.9
+    },
+    {
+      "from": "fullonica",
+      "from_order": 15,
+      "to": "menander",
+      "to_order": 16,
+      "meters": 91.1
+    },
+    {
+      "from": "menander",
+      "from_order": 16,
+      "to": "triangular-forum",
+      "to_order": 17,
+      "meters": 205.6
+    },
+    {
+      "from": "triangular-forum",
+      "from_order": 17,
+      "to": "large-theatre",
+      "to_order": 18,
+      "meters": 69
+    },
+    {
+      "from": "large-theatre",
+      "from_order": 18,
+      "to": "quadriporticus",
+      "to_order": 19,
+      "meters": 66.2
+    },
+    {
+      "from": "quadriporticus",
+      "from_order": 19,
+      "to": "octavius-quartio",
+      "to_order": 20,
+      "meters": 470.7
+    },
+    {
+      "from": "octavius-quartio",
+      "from_order": 20,
+      "to": "venus-shell",
+      "to_order": 21,
+      "meters": 44.2
+    },
+    {
+      "from": "venus-shell",
+      "from_order": 21,
+      "to": "fugitives",
+      "to_order": 22,
+      "meters": 254.4
+    },
+    {
+      "from": "fugitives",
+      "from_order": 22,
+      "to": "amphitheatre",
+      "to_order": 23,
+      "meters": 291.9
+    },
+    {
+      "from": "amphitheatre",
+      "from_order": 23,
+      "to": "palaestra",
+      "to_order": 24,
+      "meters": 123.1
+    }
+  ],
+  "_ambiguous": [
+    {
+      "a": "marina-gate",
+      "a_order": 1,
+      "b": "antiquarium",
+      "b_order": 7,
+      "meters": 31.5
+    },
+    {
+      "a": "apollo",
+      "a_order": 2,
+      "b": "forum",
+      "b_order": 3,
+      "meters": 43.7
+    },
+    {
+      "a": "apollo",
+      "a_order": 2,
+      "b": "basilica",
+      "b_order": 6,
+      "meters": 53.2
+    },
+    {
+      "a": "jupiter",
+      "a_order": 4,
+      "b": "macellum",
+      "b_order": 5,
+      "meters": 53.2
+    },
+    {
+      "a": "tragic-poet",
+      "a_order": 8,
+      "b": "thermopolium",
+      "b_order": 11,
+      "meters": 19.9
+    },
+    {
+      "a": "octavius-quartio",
+      "a_order": 20,
+      "b": "venus-shell",
+      "b_order": 21,
+      "meters": 44.2
+    }
+  ]
+}
