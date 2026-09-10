@@ -10,13 +10,20 @@ export const DEFAULTS = {
   optionals: {}                               // { 'villa-mysteries': true, 'chaste-lovers': true }
 };
 const PREFIX = 'pg.';
+const isPlain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 export class Settings {
   constructor(storage) { this.storage = storage; }
   get(key) {
     if (!(key in DEFAULTS)) throw new Error(`unknown setting ${key}`);
+    const base = structuredClone(DEFAULTS[key]);
     const raw = this.storage.getItem(PREFIX + key);
-    if (raw === null) return structuredClone(DEFAULTS[key]);
-    try { return JSON.parse(raw); } catch { return structuredClone(DEFAULTS[key]); }
+    if (raw === null) return base;
+    let stored;
+    try { stored = JSON.parse(raw); } catch { return base; }
+    // Object settings (models/voices/keys/optionals) are merged over the defaults so a value
+    // stored by an older build never leaves a newer field undefined.
+    if (isPlain(base) && isPlain(stored)) return { ...base, ...stored };
+    return stored;
   }
   set(key, value) { if (!(key in DEFAULTS)) throw new Error(`unknown setting ${key}`); this.storage.setItem(PREFIX + key, JSON.stringify(value)); }
 }

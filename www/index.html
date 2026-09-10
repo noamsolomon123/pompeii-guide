@@ -16,7 +16,8 @@
   .badges{margin-inline-start:auto;display:flex;gap:6px;align-items:center}
   .badge{font-size:11px;background:rgba(255,255,255,.18);padding:4px 8px;border-radius:20px;display:flex;align-items:center;gap:5px}
   .dot{width:7px;height:7px;border-radius:50%;background:#e07a5a}.dot.on{background:#5ad07a}
-  .gear{background:none;border:0;color:#fff;font-size:20px;cursor:pointer}
+  .gear{background:none;border:0;color:#fff;font-size:20px;cursor:pointer;width:44px;height:44px;min-width:44px;display:flex;align-items:center;justify-content:center;border-radius:50%;padding:0}
+  .gear:active{background:rgba(255,255,255,.2)}
   main{flex:1;padding:12px;display:flex;flex-direction:column;gap:12px}
   .cam{position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:3/4}
   .cam video{width:100%;height:100%;object-fit:cover;display:block}
@@ -27,7 +28,10 @@
   .row{display:flex;gap:8px}.row>.btn{flex:1}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
   .card h2{margin:0;font-size:20px;color:var(--brick)}.card .en{font-size:12px;color:var(--muted)}
-  .status{font-size:13px;color:var(--muted);margin-top:6px;min-height:18px}
+  .status{font-size:13px;color:var(--muted);min-height:18px;text-align:center}
+  .modal .head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .modal .head h3{margin:0;flex:1}
+  .x{background:none;border:0;font-size:20px;line-height:1;color:var(--muted);cursor:pointer;width:44px;height:44px;min-width:44px;border-radius:50%}
   .log{font-size:14px;line-height:1.5;max-height:160px;overflow:auto;margin-top:8px}
   .log .user{color:#1d4ed8}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20}
@@ -53,9 +57,9 @@
   <main>
     <div class="cam"><video id="video" playsinline autoplay muted></video><div class="chip" id="nearChip" hidden></div></div>
     <button class="btn" id="identifyBtn">🔍 זהה</button>
+    <div class="status" id="status"></div>
     <div class="card" id="stopCard" hidden>
       <h2 id="stopName"></h2><div class="en" id="stopEn"></div>
-      <div class="status" id="status"></div>
       <div class="row" style="margin-top:10px">
         <button class="btn sec" id="askBtn">🎙️ שאלה</button>
         <button class="btn sec" id="deepBtn">📖 העמק</button>
@@ -74,7 +78,7 @@
 <div class="modal" id="pickerModal" hidden><div class="box"><h3>בחר תחנה</h3><div class="list" id="pickerList"></div><button class="btn sec" id="pickerClose" style="width:100%">סגור</button></div></div>
 
 <div class="modal" id="settingsModal" hidden><div class="box">
-  <h3>הגדרות</h3>
+  <div class="head"><h3>הגדרות</h3><button class="x" id="settingsClose" aria-label="סגור בלי לשמור">✕</button></div>
   <label>ספק קול</label>
   <select id="sBackend"><option value="pipeline">OpenRouter pipeline</option><option value="gemini">Gemini Live</option><option value="openai">OpenAI Realtime</option></select>
   <label>OpenRouter key</label><input id="sKeyOpenrouter" type="password" autocomplete="off">
