@@ -1,10 +1,10 @@
 # Pompeii AI Guide — Technical Design
 
-Date: 2026-09-10 · Status: approved (brainstorm) · Product spec: `C:\Users\noams\TRAVEL\naples\pompeii-guide\product-spec.md` · Route source of truth: `C:\Users\noams\TRAVEL\naples\pompeii-route.md`
+Date: 2026-09-10 · Status: approved (brainstorm) · Product spec + route: kept outside the repo
 
 ## 1. Goal
 
-Voice tour guide for the 24-stop Pompeii route, visit 20.10.2026, ~9:00–13:30. Tap "זהה" → photo + GPS → guide speaks Hebrew (~30s) → offers depth → voice Q&A with barge-in → navigates to next stop. Hebrew only. Pompeii only.
+Voice tour guide for the 24-stop Pompeii route, half-day visit. Tap "זהה" → photo + GPS → guide speaks Hebrew (~30s) → offers depth → voice Q&A with barge-in → navigates to next stop. Hebrew only. Pompeii only.
 
 ## 2. Locked decisions
 
