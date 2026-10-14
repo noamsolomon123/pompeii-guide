@@ -1,4 +1,5 @@
 // bakeoff/persona.js
+import { stripTags } from '../www/lib/tts-tags.js';
 export const STOP = {
   id: 'vettii',
   name_he: 'בית הווטי',
@@ -21,5 +22,10 @@ export const SYSTEM_PROMPT = `אתה מדריך טיולים פרטי בפומפ
 - שמות לועזיים: אמור בעברית, ואת המקור הלועזי פעם אחת.
 - כשמקטיעים אותך, עצור מיד וענה על השאלה החדשה.`;
 
-// 30-second script rendered by every TTS candidate. Same text for all.
-export const TTS_SCRIPT = STOP.open30;
+// 30-second script rendered by every TTS candidate: the v2 vettii open30 from content/stops.
+// Gemini 3.8 gets the <tags>; every other voice gets the stripped text.
+export const TTS_SCRIPT_TAGGED = "בית הווטי הוא בית של כסף חדש. את הארמון הזה לא בנו אצילים, אלא שני עבדים לשעבר, רסטיטוטוס וקונוויווה. שניהם נשאו את שם המשפחה וטיוס, ומכאן שם הבית. הם השתחררו, התעשרו ממסחר, כנראה ביין, ושפכו את הכסף על כל מה שסביבכם. עכשיו תסתכלו על הקיר, מיד בכניסה. זה פריאפוס, אל הפריון. והוא שוקל על מאזניים את האיבר העצום שלו, <short pause> מול שק מלא מטבעות. <chuckle> מצחיק, אבל גם רציני. זה קמע נגד עין הרע, והודעה לכל מי שנכנס. בבית הזה יש כסף. במשך עשרות שנים הציור היה נעול בארון עץ, והשומר פתח אותו רק תמורת טיפ. היום הוא גלוי לכולם.";
+export const TTS_SCRIPT = stripTags(TTS_SCRIPT_TAGGED);
+
+// Mood test: the Garden of the Fugitives open30 with its tts_style (speech_metadata.style).
+export const TTS_SOMBER = { text: "זה גן הנמלטים. לפני ההתפרצות לא עמד כאן בית, אלא כרם וגן ירק, ממש בתוך החומה, ליד שער נוצ'רה. בבוקר היום השני של ההתפרצות, קבוצה של אנשים ניסתה להגיע לשער הזה. הם כבר הלכו מעל שכבה עבה של אבני ספוג. <short pause> ואז הגיע גל פירוקלסטי. <sigh> שלושה עשר מהם נשארו כאן. תסתכלו על ארון הזכוכית בקצה הגן. אלה לא פסלים. בתוך הגבס נמצאות העצמות של האנשים עצמם, בדיוק במקום שבו נפלו. ניקח רגע של שקט. <long pause>", style: "quiet, gentle and unhurried, with respectful restraint" };

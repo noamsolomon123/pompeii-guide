@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { haversineM } from '../www/lib/geo.js';
+import { stripTags, findTags, tagProblems } from '../www/lib/tts-tags.js';
 
 export { haversineM };
 
@@ -22,7 +23,10 @@ export const REQUIRED_KEYS = [
   'gps', 'gps_quality', 'hours', 'status', 'cues', 'open30', 'deep',
   'look_for', 'next_nav', 'faq', 'sources',
 ];
-export const ALLOWED_EXTRA_KEYS = ['anecdotes', 'notes'];
+export const ALLOWED_EXTRA_KEYS = ['anecdotes', 'notes', 'tts_style'];
+// Fields the guide speaks aloud; only these may carry Gemini 3.8 inline tags (see docs/superpowers/specs/tts-tags-guide.md).
+export const SPOKEN_FIELDS = ['open30', 'deep', 'look_for', 'next_nav'];
+const MAX_TAGS = { open30: 3, deep: 6, look_for: 1, next_nav: 0 };
 export const OUTPUT_KEYS = [
   'id', 'order', 'optional', 'name_he', 'name_en', 'regio',
   'gps', 'gps_quality', 'hours', 'status', 'cues', 'open30', 'deep',
@@ -104,7 +108,7 @@ export function validateStops(stops) {
     // extra keys
     for (const key of Object.keys(stop)) {
       if (!REQUIRED_KEYS.includes(key) && !ALLOWED_EXTRA_KEYS.includes(key)) {
-        err(id, key, 'unexpected extra key (only anecdotes, notes allowed)');
+        err(id, key, 'unexpected extra key (only anecdotes, notes, tts_style allowed)');
       }
     }
 
@@ -159,12 +163,34 @@ export function validateStops(stops) {
       err(id, 'gps_quality', 'must be "exact", "approx", or null');
     }
 
-    // word counts
-    const open30Count = wordCount(stop.open30);
+    // Gemini 3.8 inline tags: valid syntax in spoken fields, none anywhere else
+    for (const field of SPOKEN_FIELDS) {
+      if (typeof stop[field] !== 'string') continue;
+      for (const p of tagProblems(stop[field])) err(id, field, p);
+      const spoken = stripTags(stop[field]);
+      if (LATIN_RE.test(spoken)) err(id, field, 'contains Latin letters (spoken aloud; name_en is on screen)');
+      if (PAREN_RE.test(spoken)) err(id, field, 'contains parentheses (spoken aloud)');
+      const n = findTags(stop[field]).length;
+      if (n > MAX_TAGS[field]) warnings.push(`${id}: ${field}: ${n} tags, guide max ${MAX_TAGS[field]}`);
+    }
+    for (const field of ['name_he', 'cues', 'faq', 'anecdotes']) {
+      const vals = Array.isArray(stop[field]) ? stop[field] : [stop[field]];
+      if (vals.some((v) => typeof v === 'string' && /[<>]/.test(v))) err(id, field, 'tags are only allowed in spoken fields');
+    }
+    if ('tts_style' in stop && (typeof stop.tts_style !== 'string' || stop.tts_style.trim() === '' || /[<>]/.test(stop.tts_style))) {
+      err(id, 'tts_style', 'must be a non-empty plain string');
+    }
+
+    if (typeof stop.open30 === 'string' && /שאעמיק/.test(stop.open30)) {
+      err(id, 'open30', 'ends with a depth offer; the app speaks "רוצים שאעמיק?" itself');
+    }
+
+    // word counts (tags are not words)
+    const open30Count = wordCount(stripTags(stop.open30));
     if (typeof stop.open30 !== 'string' || open30Count < 60 || open30Count > 110) {
       err(id, 'open30', `word count ${open30Count} outside 60-110`);
     }
-    const deepCount = wordCount(stop.deep);
+    const deepCount = wordCount(stripTags(stop.deep));
     const deepEmpty = typeof stop.deep === 'string' && stop.deep.trim() === '';
     if (typeof stop.deep !== 'string') {
       err(id, 'deep', 'must be a string');
@@ -177,7 +203,7 @@ export function validateStops(stops) {
     // next_nav
     if (typeof stop.next_nav !== 'string' || stop.next_nav.trim() === '') {
       err(id, 'next_nav', 'must be non-empty');
-    } else if (!stop.next_nav.trim().endsWith('.')) {
+    } else if (!stripTags(stop.next_nav).endsWith('.')) {
       err(id, 'next_nav', 'must end with "."');
     }
 
@@ -306,14 +332,15 @@ function readJsonIfExists(p) {
   return JSON.parse(fs.readFileSync(abs, 'utf8'));
 }
 
-function toOutputStop(stop) {
+// The app gets clean text: tags are for the MP3 render only (it reads content/stops directly).
+export function toOutputStop(stop) {
   const out = {};
   for (const key of OUTPUT_KEYS) {
     if (key === 'anecdotes') {
       if (Object.prototype.hasOwnProperty.call(stop, 'anecdotes')) out.anecdotes = stop.anecdotes;
       continue;
     }
-    out[key] = stop[key];
+    out[key] = SPOKEN_FIELDS.includes(key) && typeof stop[key] === 'string' ? stripTags(stop[key]) : stop[key];
   }
   return out;
 }

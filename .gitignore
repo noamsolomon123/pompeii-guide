@@ -3,3 +3,5 @@ node_modules/
 *.wav
 .DS_Store
 scripts/sim/report.json
+.env
+docs/tts-samples/

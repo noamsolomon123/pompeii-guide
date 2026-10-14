@@ -15,9 +15,12 @@ Date tested:
 | | Accent | Naturalness | Latency | Notes |
 |---|---|---|---|---|
 | OpenAI gpt-4o-mini-tts via OpenRouter | | | | |
-| Gemini 3.1 Flash TTS via OpenRouter (Kore) | | | | |
+| Gemini 3.8 Flash TTS via OpenRouter (Kore) + tags | | | | |
+| Gemini 3.8 Flash TTS plain (same text, tags stripped) | | | | |
+| Gemini 3.8 · Garden of the Fugitives (tts_style + sigh/pauses) | | | | |
 | ElevenLabs multilingual v2 | | | | |
 
 ## Decision
 - Live backend:
 - TTS voice:
+- Tags in Hebrew: help / neutral / hurt? Any tag spoken as a word?

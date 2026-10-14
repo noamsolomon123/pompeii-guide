@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  validateStops, applyOverrides, wordCount, haversineM,
+  validateStops, applyOverrides, wordCount, haversineM, toOutputStop,
 } from '../build-stops.mjs';
 
 const HE_WORDS = ['מילה', 'טקסט', 'לדוגמה', 'משפט', 'תיאור', 'אתם', 'תראו', 'שימו', 'לב', 'פומפיי'];
@@ -129,4 +129,67 @@ test('applyOverrides replaces name_he from names map when provided', () => {
 test('haversineM is re-exported from www/lib/geo.js and matches known distance', () => {
   const d = haversineM([40.7489, 14.4842], [40.7513, 14.4949]);
   assert.ok(d > 900 && d < 1000, `got ${d}`);
+});
+
+// --- Gemini 3.8 inline tags ---------------------------------------------
+
+test('unknown tag in a spoken field produces an error naming the field and tag', () => {
+  const stops = buildValidStops();
+  stops[0].open30 = `${heWords(40)} <laugge> ${heWords(40)}`;
+  const { errors } = validateStops(stops);
+  assert.ok(errors.some((e) => e.includes('stop-1') && e.includes('open30') && e.includes('laugge')), errors.join('\n'));
+});
+
+test('tags do not count toward word limits', () => {
+  const stops = buildValidStops();
+  stops[0].open30 = `${heWords(36)} <short pause> ${heWords(36)} <sigh> ${heWords(36)} <chuckle>`; // 108 words, 111 tokens raw
+  const { errors } = validateStops(stops);
+  assert.deepEqual(errors, []);
+});
+
+test('tags outside spoken fields produce an error', () => {
+  const stops = buildValidStops();
+  stops[0].faq = ['שאלה? <sigh> תשובה.'];
+  const { errors } = validateStops(stops);
+  assert.ok(errors.some((e) => e.includes('stop-1') && e.includes('faq')), errors.join('\n'));
+});
+
+test('too many tags in open30 produce a density warning, not an error', () => {
+  const stops = buildValidStops();
+  stops[0].open30 = `${heWords(20)} <sigh> ${heWords(20)} <chuckle> ${heWords(20)} <short pause> ${heWords(20)} <breath> ${heWords(5)}`;
+  const { errors, warnings } = validateStops(stops);
+  assert.deepEqual(errors, []);
+  assert.ok(warnings.some((w) => w.includes('stop-1') && w.includes('open30') && w.includes('tags')), warnings.join('\n'));
+});
+
+test('tts_style is an allowed optional string key; non-string is an error', () => {
+  const stops = buildValidStops();
+  stops[0].tts_style = 'quiet, gentle and unhurried';
+  assert.deepEqual(validateStops(stops).errors, []);
+  stops[0].tts_style = 42;
+  assert.ok(validateStops(stops).errors.some((e) => e.includes('tts_style')));
+});
+
+test('toOutputStop strips tags from spoken fields and drops tts_style', () => {
+  const stop = { ...makeStop('a', 1), open30: 'הם ברחו. <sigh> לא הספיקו.', tts_style: 'somber' };
+  const out = toOutputStop(stop);
+  assert.equal(out.open30, 'הם ברחו. לא הספיקו.');
+  assert.ok(!('tts_style' in out));
+});
+
+// --- audio-first spoken text (v2 style) ---------------------------------
+
+test('Latin letters or parentheses in a spoken field produce an error (TTS reads them aloud)', () => {
+  const stops = buildValidStops();
+  stops[0].open30 = `${heWords(40)} (Casa dei Vettii) ${heWords(40)}`;
+  const { errors } = validateStops(stops);
+  assert.ok(errors.some((e) => e.includes('stop-1') && e.includes('open30') && e.includes('Latin')), errors.join('\n'));
+  assert.ok(errors.some((e) => e.includes('stop-1') && e.includes('open30') && e.includes('parentheses')), errors.join('\n'));
+});
+
+test('open30 must not carry the depth offer the app already speaks', () => {
+  const stops = buildValidStops();
+  stops[0].open30 = `${heWords(80)} רוצים שאעמיק? תגידו לי.`;
+  const { errors } = validateStops(stops);
+  assert.ok(errors.some((e) => e.includes('stop-1') && e.includes('open30') && e.includes('offer')), errors.join('\n'));
 });

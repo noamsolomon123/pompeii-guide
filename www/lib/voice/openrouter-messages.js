@@ -19,6 +19,9 @@ export function buildChat({ model, systemPrompt, history }) {
   return { model, messages: [{ role: 'system', content: systemPrompt }, ...history], max_tokens: 300 };
 }
 
-export function buildSpeech({ model, text, voice }) {
-  return { model, input: text, voice, response_format: 'mp3' };
+// Gemini 3.8 reads `input` verbatim (inline <tags> only); sustained delivery goes in speech_metadata.style.
+export function buildSpeech({ model, text, voice, style }) {
+  const body = { model, input: text, voice, response_format: 'mp3' };
+  if (style && model.startsWith('google/')) body.provider = { options: { 'google-ai-studio': { speech_metadata: { style } } } };
+  return body;
 }

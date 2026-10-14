@@ -2,15 +2,15 @@
 import { OR, headers, buildSpeech } from './openrouter-messages.js';
 
 // OpenAI and Gemini voices both billed on the OpenRouter wallet.
-export async function openrouterTts({ apiKey, text, model, voice }) {
-  const res = await fetch(OR.speech, { method: 'POST', headers: headers(apiKey), body: JSON.stringify(buildSpeech({ model, text, voice })) });
+export async function openrouterTts({ apiKey, text, model, voice, style }) {
+  const res = await fetch(OR.speech, { method: 'POST', headers: headers(apiKey), body: JSON.stringify(buildSpeech({ model, text, voice, style })) });
   if (!res.ok) throw new Error(`openrouter tts ${res.status}: ${(await res.text()).slice(0, 200)}`);
   return URL.createObjectURL(await res.blob());
 }
 
 export const TTS_PRESETS = {
   openai: { model: 'openai/gpt-4o-mini-tts-2025-12-15', voice: 'alloy' },
-  gemini: { model: 'google/gemini-3.1-flash-tts-preview', voice: 'Kore' }
+  gemini: { model: 'google/gemini-3.8-flash-tts', voice: 'Kore' }
 };
 
 export async function elevenTts({ apiKey, text, voiceId = 'JBFqnCBsd6RMkjVDRZzb', model = 'eleven_multilingual_v2' }) {

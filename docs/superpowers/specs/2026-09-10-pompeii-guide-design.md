@@ -24,7 +24,7 @@ Voice tour guide for the 24-stop Pompeii route, visit 20.10.2026, ~9:00–13:30.
 
 ### P1 — Bake-off (`bakeoff/`)
 Single page. Purpose: pick live voice backend and TTS voice by ear.
-- Backend selector: OpenAI Realtime (`gpt-realtime-2.1` / `gpt-realtime-2.1-mini`), Gemini Live (`gemini-2.5-flash-native-audio-preview-12-2025` / `gemini-3.1-flash-live-preview`), OpenRouter pipeline (STT `openai/whisper-large-v3-turbo` → LLM of choice, default `google/gemini-2.5-flash` → TTS `openai/gpt-4o-mini-tts-2025-12-15` or `google/gemini-3.1-flash-tts-preview`).
+- Backend selector: OpenAI Realtime (`gpt-realtime-2.1` / `gpt-realtime-2.1-mini`), Gemini Live (`gemini-2.5-flash-native-audio-preview-12-2025` / `gemini-3.1-flash-live-preview`), OpenRouter pipeline (STT `openai/whisper-large-v3-turbo` → LLM of choice, default `google/gemini-2.5-flash` → TTS `openai/gpt-4o-mini-tts-2025-12-15` or `google/gemini-3.8-flash-tts`).
 - Preloaded guide persona + House of the Vettii context (Hebrew system prompt).
 - Mic on, speak Hebrew, interrupt mid-answer, listen. Pipeline barge-in = local RMS VAD stops playback and starts recording.
 - TTS panel: same 30s Vettii script rendered by OpenAI TTS and Gemini TTS (both via OpenRouter, one key) and ElevenLabs (direct, free tier) → play side by side.

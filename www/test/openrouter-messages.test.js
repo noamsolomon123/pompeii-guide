@@ -29,3 +29,15 @@ test('buildSpeech requests mp3 with voice', () => {
   assert.deepEqual(buildSpeech({ model: 'openai/gpt-4o-mini-tts-2025-12-15', text: 'שלום', voice: 'alloy' }),
     { model: 'openai/gpt-4o-mini-tts-2025-12-15', input: 'שלום', voice: 'alloy', response_format: 'mp3' });
 });
+
+test('buildSpeech passes Gemini style as speech_metadata provider option', () => {
+  assert.deepEqual(buildSpeech({ model: 'google/gemini-3.8-flash-tts', text: 'שלום <sigh>', voice: 'Kore', style: 'warm' }), {
+    model: 'google/gemini-3.8-flash-tts', input: 'שלום <sigh>', voice: 'Kore', response_format: 'mp3',
+    provider: { options: { 'google-ai-studio': { speech_metadata: { style: 'warm' } } } }
+  });
+});
+
+test('buildSpeech ignores style for non-Gemini models', () => {
+  assert.deepEqual(buildSpeech({ model: 'openai/gpt-4o-mini-tts-2025-12-15', text: 'שלום', voice: 'alloy', style: 'warm' }),
+    { model: 'openai/gpt-4o-mini-tts-2025-12-15', input: 'שלום', voice: 'alloy', response_format: 'mp3' });
+});

@@ -1,5 +1,5 @@
 // bakeoff/app.js
-import { SYSTEM_PROMPT, TTS_SCRIPT } from './persona.js';
+import { SYSTEM_PROMPT, TTS_SCRIPT, TTS_SCRIPT_TAGGED, TTS_SOMBER } from './persona.js';
 import { GeminiLiveClient } from '../www/lib/voice/gemini-live.js';
 import { OpenAIRealtimeClient } from '../www/lib/voice/openai-realtime.js';
 import { PipelineClient } from '../www/lib/voice/pipeline.js';
@@ -79,5 +79,8 @@ async function runTts(label, fn) {
   } catch (e) { wrap.querySelector('.status').textContent = e.message; wrap.querySelector('.status').classList.add('err'); }
 }
 $('ttsOpenai').addEventListener('click', () => runTts('OpenAI TTS', () => openrouterTts({ apiKey: key('OPENROUTER_KEY'), text: TTS_SCRIPT, ...TTS_PRESETS.openai })));
-$('ttsGemini').addEventListener('click', () => runTts('Gemini TTS', () => openrouterTts({ apiKey: key('OPENROUTER_KEY'), text: TTS_SCRIPT, ...TTS_PRESETS.gemini })));
+// Gemini 3.8 hears the <tags>; every other voice gets the stripped text (they would read tags aloud).
+$('ttsGemini').addEventListener('click', () => runTts('Gemini 3.8 + tags', () => openrouterTts({ apiKey: key('OPENROUTER_KEY'), text: TTS_SCRIPT_TAGGED, ...TTS_PRESETS.gemini })));
+$('ttsGeminiPlain').addEventListener('click', () => runTts('Gemini 3.8 plain', () => openrouterTts({ apiKey: key('OPENROUTER_KEY'), text: TTS_SCRIPT, ...TTS_PRESETS.gemini })));
+$('ttsGeminiSomber').addEventListener('click', () => runTts('Gemini 3.8 fugitives', () => openrouterTts({ apiKey: key('OPENROUTER_KEY'), ...TTS_PRESETS.gemini, ...TTS_SOMBER })));
 $('ttsEleven').addEventListener('click', () => runTts('ElevenLabs', () => elevenTts({ apiKey: key('ELEVEN_KEY'), text: TTS_SCRIPT })));
